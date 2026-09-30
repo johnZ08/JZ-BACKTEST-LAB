@@ -7,6 +7,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Estado del filtro de sesión
+  const [selectedSession, setSelectedSession] = useState('ALL');
+
   // Estado del formulario
   const [asset, setAsset] = useState('NAS100');
   const [type, setType] = useState('BUY');
@@ -55,14 +58,21 @@ export default function App() {
   };
 
   // -------------------------------------------------------------
-  // CÁLCULOS ESTADÍSTICOS & MÉTRICAS
+  // FILTRADO DE TRADES SEGÚN LA SESIÓN SELECCIONADA
   // -------------------------------------------------------------
-  const totalTrades = trades.length;
-  const wins = trades.filter(t => t.outcome === 'WIN').length;
-  const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : '0.0';
-  const totalR = trades.reduce((acc, t) => acc + t.resultR, 0).toFixed(2);
+  const filteredTrades = selectedSession === 'ALL' 
+    ? trades 
+    : trades.filter(t => t.session === selectedSession);
 
-  // Expectativa Matemática por Trade (EV = Total R / Total Trades)
+  // -------------------------------------------------------------
+  // CÁLCULOS ESTADÍSTICOS & MÉTRICAS (SOBRE FILTRADOS)
+  // -------------------------------------------------------------
+  const totalTrades = filteredTrades.length;
+  const wins = filteredTrades.filter(t => t.outcome === 'WIN').length;
+  const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : '0.0';
+  const totalR = filteredTrades.reduce((acc, t) => acc + t.resultR, 0).toFixed(2);
+
+  // Expectativa Matemática por Trade
   const expectancy = totalTrades > 0 ? (parseFloat(totalR) / totalTrades).toFixed(2) : '0.00';
 
   // Curva de equidad y Max Drawdown (R)
@@ -72,15 +82,13 @@ export default function App() {
 
   const equityData = [{ tradeNum: 0, R: 0, label: 'Inicio' }];
 
-  trades.forEach((t, index) => {
+  filteredTrades.forEach((t, index) => {
     cumulative += t.resultR;
     
-    // Rastrear el pico acumulado más alto
     if (cumulative > peak) {
       peak = cumulative;
     }
     
-    // Calcular la caída actual desde el pico
     const currentDrawdown = peak - cumulative;
     if (currentDrawdown > maxDrawdown) {
       maxDrawdown = currentDrawdown;
@@ -119,10 +127,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-8 border-b border-slate-800 gap-4">
+      <header className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-6 border-b border-slate-800 gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-wider text-emerald-400">
-            JZ_BACKTEST_LAB <span className="text-xs text-slate-500 font-mono">v1.2</span>
+            JZ_BACKTEST_LAB <span className="text-xs text-slate-500 font-mono">v1.3</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">Terminal de Pruebas & Análisis Estadístico</p>
         </div>
@@ -134,7 +142,34 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tarjetas de Métricas (5 Columnas en Pantallas Medianas) */}
+      {/* FILTROS POR SESIÓN */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-slate-900/60 border border-slate-800 p-3 rounded-xl">
+        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider pl-1">
+          Filtrar por Sesión:
+        </span>
+        <div className="flex flex-wrap gap-2 font-mono text-xs">
+          {[
+            { id: 'ALL', label: 'Todas las Sesiones' },
+            { id: 'NY', label: 'New York (NY)' },
+            { id: 'LONDON', label: 'Londres' },
+            { id: 'ASIA', label: 'Asia' }
+          ].map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSelectedSession(s.id)}
+              className={`px-3 py-1.5 rounded-lg font-bold transition border ${
+                selectedSession === s.id
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-lg shadow-emerald-950/50'
+                  : 'bg-slate-950/80 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tarjetas de Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
         <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl">
           <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Total Trades</p>
@@ -172,12 +207,14 @@ export default function App() {
       <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-xl mb-8">
         <h2 className="text-lg font-bold text-slate-200 mb-4 border-b border-slate-800 pb-2 flex items-center justify-between">
           <span>Curva de Equidad Acumulada (R)</span>
-          <span className="text-xs font-mono font-normal text-slate-400">Escala: Retorno en R</span>
+          <span className="text-xs font-mono font-normal text-slate-400">
+            Filtro: {selectedSession === 'ALL' ? 'Global' : selectedSession}
+          </span>
         </h2>
 
-        {trades.length === 0 ? (
+        {filteredTrades.length === 0 ? (
           <div className="h-48 flex items-center justify-center text-slate-500 font-mono text-sm border border-dashed border-slate-800 rounded-lg">
-            Registra tu primer trade para proyectar el gráfico de equidad.
+            No hay operaciones registradas para el filtro seleccionado.
           </div>
         ) : (
           <div className="w-full overflow-x-auto">
@@ -324,10 +361,12 @@ export default function App() {
           </form>
         </div>
 
-        {/* Tabla de Historial */}
+        {/* Tabla de Historial (Muestra los trades filtrados) */}
         <div className="lg:col-span-2 bg-slate-900/90 border border-slate-800 p-6 rounded-xl">
           <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-            <h2 className="text-lg font-bold text-slate-200">Historial de Ejecuciones</h2>
+            <h2 className="text-lg font-bold text-slate-200">
+              Historial de Ejecuciones {selectedSession !== 'ALL' && `(${selectedSession})`}
+            </h2>
             {trades.length > 0 && (
               <button
                 onClick={handleClearAll}
@@ -338,9 +377,9 @@ export default function App() {
             )}
           </div>
 
-          {trades.length === 0 ? (
+          {filteredTrades.length === 0 ? (
             <div className="text-center py-12 text-slate-500 font-mono text-sm">
-              No hay ejecuciones registradas. Completa el formulario para agregar tu primer trade.
+              No hay ejecuciones registradas para la sesión activa.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -358,7 +397,7 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
-                  {trades.map((t, idx) => (
+                  {filteredTrades.map((t, idx) => (
                     <tr key={t.id} className="hover:bg-slate-800/30">
                       <td className="py-2.5 px-2 text-slate-500">#{idx + 1}</td>
                       <td className="py-2.5 px-2 text-slate-400">{t.date}</td>
