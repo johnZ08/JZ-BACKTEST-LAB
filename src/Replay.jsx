@@ -7,7 +7,7 @@ const ALIGN_OFFSET_H = 0;
 // Cambia el código cuando cambie el vencimiento (H=mar, M=jun, U=sep, Z=dic + último dígito del año).
 const CONTRACT_SYMBOL = 'MNQZ6';
 const DEFAULT_POINT_VALUE = 2;
-const VISIBLE = 100; // velas visibles en pantalla
+const ZOOM_STEPS = [30, 50, 100, 150, 250, 400]; // velas visibles según el zoom
 const SPEEDS = [1, 2, 5, 10, 20]; // velas base por segundo
 const TIMEFRAMES = [
   { sec: 30, label: '30s' },
@@ -152,7 +152,7 @@ const btn = 'px-3 py-1.5 rounded-lg border text-xs font-mono transition cursor-p
 const fieldClass =
   'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition';
 
-export default function Replay({ onSave }) {
+export default function Replay({ onSave, savedTrades = [] }) {
   const [data, setData] = useState([]);
   const [fileName, setFileName] = useState('');
   const [baseSec, setBaseSec] = useState(60);
@@ -165,6 +165,12 @@ export default function Replay({ onSave }) {
   const [session, setSession] = useState('NY');
   const [contracts, setContracts] = useState('1');
   const [pointValue, setPointValue] = useState(String(DEFAULT_POINT_VALUE));
+  const [commission, setCommission] = useState('0'); // $ por contrato, ida y vuelta
+  const [dailyLimit, setDailyLimit] = useState('0'); // $ de pérdida diaria máxima (0 = sin límite)
+  const [visible, setVisible] = useState(100);
+  const [pan, setPan] = useState(0); // velas desplazadas hacia atrás
+  const [editSl, setEditSl] = useState('');
+  const [editTp, setEditTp] = useState('');
   const [position, setPosition] = useState(null);
   const [sessionTrades, setSessionTrades] = useState([]);
   const [error, setError] = useState('');
@@ -182,7 +188,7 @@ export default function Replay({ onSave }) {
   const visibleCandles = useMemo(() => {
     if (!agg.length) return [];
     const i = findAggIndex(agg, pos);
-    const list = agg.slice(Math.max(0, i - VISIBLE + 1), i + 1);
+    const list = agg.slice(Math.max(0, i - visible - pan + 1), i + 1);
     const cur = list[list.length - 1];
     if (cur.lastIdx > pos) {
       // vela en formación: se arma solo con datos ya reproducidos
@@ -194,8 +200,8 @@ export default function Replay({ onSave }) {
       }
       list[list.length - 1] = { ...cur, h, l, c: data[pos].c };
     }
-    return list;
-  }, [agg, pos, data]);
+    return pan > 0 ? list.slice(0, Math.max(1, list.length - pan)) : list;
+  }, [agg, pos, data, visible, pan]);
 
   const loadData = (rows, name) => {
     const base = detectBase(rows);
@@ -209,6 +215,7 @@ export default function Replay({ onSave }) {
     setBaseSec(base);
     setTf(ok[0].sec);
     setPos(Math.min(rows.length - 1, 300));
+    setPan(0);
     setPosition(null);
     setSessionTrades([]);
     setPlaying(false);
@@ -228,8 +235,8 @@ export default function Replay({ onSave }) {
 
   const closePosition = (outcome, r, exitIdx) => {
     const p = position;
-    const risk = Math.abs(p.entry - p.sl);
-    const rr = round2(Math.abs(p.tp - p.entry) / risk);
+    const risk = p.risk; // riesgo inicial en puntos (no cambia aunque muevas el SL)
+    const rr = round2(p.rr0);
     const day = new Date(p.openTime * 1000).toISOString().slice(0, 10);
     const [y, m, d] = day.split('-');
     setSessionTrades((prev) => [
@@ -249,7 +256,8 @@ export default function Replay({ onSave }) {
         resultR: round2(r),
         contracts: p.contracts,
         pointValue: p.pointValue,
-        pnlUSD: round2(r * risk * p.pointValue * p.contracts),
+        commissionUSD: round2(p.commission * p.contracts),
+        pnlUSD: round2(r * risk * p.pointValue * p.contracts - p.commission * p.contracts),
         session: p.session,
         notes: `Replay ${tfLabel} - cierre ${fmtTime(data[exitIdx].t)}`
       }
@@ -272,8 +280,10 @@ export default function Replay({ onSave }) {
         const tpHit = position.type === 'BUY' ? c.h >= position.tp : c.l <= position.tp;
         if (slHit || tpHit) {
           // si ambos caen en la misma vela se asume SL primero (criterio conservador)
-          const rr = Math.abs(position.tp - position.entry) / Math.abs(position.entry - position.sl);
-          closePosition(slHit ? 'LOSS' : 'WIN', slHit ? -1 : rr, p);
+          const dir = position.type === 'BUY' ? 1 : -1;
+          const exit = slHit ? position.sl : position.tp;
+          const r = (dir * (exit - position.entry)) / position.risk;
+          closePosition(r > 0 ? 'WIN' : r < 0 ? 'LOSS' : 'BE', r, p);
           setPos(p);
           setPlaying(false);
           return;
@@ -290,6 +300,15 @@ export default function Replay({ onSave }) {
     return () => clearInterval(id);
   }, [playing, speed]);
 
+  // al abrir una operación, los campos de "Nuevo SL/TP" arrancan con sus niveles
+  useEffect(() => {
+    if (position) {
+      setEditSl(String(position.sl));
+      setEditTp(String(position.tp));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [position?.openTime]);
+
   const nextCandle = () => {
     if (!agg.length) return;
     const i = findAggIndex(agg, pos);
@@ -298,6 +317,10 @@ export default function Replay({ onSave }) {
   };
 
   const openPosition = (type) => {
+    if (limitHit) {
+      setError('Límite de pérdida diaria alcanzado: sin nuevas entradas hoy.');
+      return;
+    }
     const sl = Number(slPts);
     const tp = Number(tpPts);
     if (!(sl > 0 && tp > 0)) {
@@ -313,20 +336,59 @@ export default function Replay({ onSave }) {
       openTime: data[pos].t,
       session,
       contracts: Math.max(1, Math.floor(Number(contracts)) || 1),
-      pointValue: Number(pointValue) || DEFAULT_POINT_VALUE
+      pointValue: Number(pointValue) || DEFAULT_POINT_VALUE,
+      commission: Math.max(0, Number(commission) || 0),
+      risk: sl,
+      rr0: tp / sl
     });
     setError('');
   };
 
   const floatR = position
     ? ((position.type === 'BUY' ? 1 : -1) * (data[pos].c - position.entry)) /
-      Math.abs(position.entry - position.sl)
+      position.risk
     : 0;
 
   const floatPts = position ? (position.type === 'BUY' ? 1 : -1) * (data[pos].c - position.entry) : 0;
-  const floatUSD = position ? floatPts * position.pointValue * position.contracts : 0;
-  const riskUSD = (Number(slPts) || 0) * (Number(pointValue) || 0) * (Math.floor(Number(contracts)) || 0);
-  const rewardUSD = (Number(tpPts) || 0) * (Number(pointValue) || 0) * (Math.floor(Number(contracts)) || 0);
+  const floatUSD = position
+    ? floatPts * position.pointValue * position.contracts - position.commission * position.contracts
+    : 0;
+  const nContracts = Math.max(0, Math.floor(Number(contracts)) || 0);
+  const commissionTotal = (Number(commission) || 0) * nContracts;
+  const riskUSD = (Number(slPts) || 0) * (Number(pointValue) || 0) * nContracts + commissionTotal;
+  const rewardUSD = (Number(tpPts) || 0) * (Number(pointValue) || 0) * nContracts - commissionTotal;
+
+  const currentDay = data.length ? new Date(data[pos].t * 1000).toISOString().slice(0, 10) : '';
+  const dailyPnL = [...savedTrades, ...sessionTrades]
+    .filter((t) => t.dateISO === currentDay)
+    .reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
+  const limitHit = Number(dailyLimit) > 0 && dailyPnL <= -Number(dailyLimit);
+
+  const applyLevels = () => {
+    const c = data[pos].c;
+    const newSl = parseFloat(editSl);
+    const newTp = parseFloat(editTp);
+    const ok =
+      position.type === 'BUY' ? newSl < c && newTp > c : newSl > c && newTp < c;
+    if (!Number.isFinite(newSl) || !Number.isFinite(newTp) || !ok) {
+      setError('El SL y el TP deben quedar a cada lado del precio actual.');
+      return;
+    }
+    setPosition({ ...position, sl: round2(newSl), tp: round2(newTp) });
+    setError('');
+  };
+
+  const moveToBreakEven = () => {
+    const c = data[pos].c;
+    const inProfit = position.type === 'BUY' ? c > position.entry : c < position.entry;
+    if (!inProfit) {
+      setError('Solo puedes llevar a break-even con la operación en ganancia.');
+      return;
+    }
+    setPosition({ ...position, sl: position.entry });
+    setEditSl(String(position.entry));
+    setError('');
+  };
 
   const closeAtMarket = () => {
     const r = round2(floatR);
@@ -359,7 +421,7 @@ export default function Replay({ onSave }) {
     lo -= margin;
     hi += margin;
     const y = (p) => padY + ((hi - p) / (hi - lo)) * (H - padY * 2);
-    const cw = (W - padR) / VISIBLE;
+    const cw = (W - padR) / visible;
 
     ctx.font = '11px monospace';
     ctx.lineWidth = 1;
@@ -374,7 +436,7 @@ export default function Replay({ onSave }) {
       ctx.fillText(p.toFixed(1), W - padR + 6, y(p) + 4);
     }
 
-    const offset = (VISIBLE - visibleCandles.length) * cw;
+    const offset = (visible - visibleCandles.length) * cw;
     visibleCandles.forEach((c, i) => {
       const x = offset + i * cw + cw / 2;
       const color = c.c >= c.o ? '#10b981' : '#f43f5e';
@@ -413,7 +475,7 @@ export default function Replay({ onSave }) {
       ctx.font = '11px monospace';
     }
     hline(visibleCandles[visibleCandles.length - 1].c, '#38bdf8', '');
-  }, [visibleCandles, position, floatPts, floatUSD]);
+  }, [visibleCandles, position, floatPts, floatUSD, visible]);
 
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
@@ -467,6 +529,40 @@ export default function Replay({ onSave }) {
               <span className="text-xs font-mono text-slate-400">
                 {fmtTime(data[pos].t)} - {data[pos].c.toFixed(2)}
               </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                onClick={() => setVisible(ZOOM_STEPS[Math.max(0, ZOOM_STEPS.indexOf(visible) - 1)])}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                Acercar
+              </button>
+              <button
+                onClick={() => setVisible(ZOOM_STEPS[Math.min(ZOOM_STEPS.length - 1, ZOOM_STEPS.indexOf(visible) + 1)])}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                Alejar
+              </button>
+              <button
+                onClick={() => setPan((p) => Math.min(p + Math.ceil(visible / 4), Math.max(0, agg.length - 1)))}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                ◀ Atrás
+              </button>
+              <button
+                onClick={() => setPan((p) => Math.max(0, p - Math.ceil(visible / 4)))}
+                disabled={pan === 0}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white disabled:opacity-40`}
+              >
+                Adelante ▶
+              </button>
+              {pan > 0 && (
+                <button onClick={() => setPan(0)} className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
+                  Ir al presente
+                </button>
+              )}
+              <span className="text-[10px] font-mono text-slate-500 ml-1">{visible} velas</span>
             </div>
 
             <canvas ref={canvasRef} width={900} height={400} className="w-full h-auto rounded-lg bg-slate-950" />
@@ -527,7 +623,7 @@ export default function Replay({ onSave }) {
 
           {/* OPERATIVA */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[10px] text-slate-500 font-mono mb-1">SL (puntos)</label>
                 <input type="number" min="0" step="any" value={slPts} onChange={(e) => setSlPts(e.target.value)} disabled={!!position} className={fieldClass} />
@@ -552,13 +648,28 @@ export default function Replay({ onSave }) {
                 <label className="block text-[10px] text-slate-500 font-mono mb-1">Valor por punto ($)</label>
                 <input type="number" min="0" step="any" value={pointValue} onChange={(e) => setPointValue(e.target.value)} disabled={!!position} className={fieldClass} />
               </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Comisión/contrato ($, ida y vuelta)</label>
+                <input type="number" min="0" step="any" value={commission} onChange={(e) => setCommission(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Límite pérdida diaria ($, 0 = sin límite)</label>
+                <input type="number" min="0" step="any" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} className={fieldClass} />
+              </div>
             </div>
 
             <p className="text-[11px] font-mono text-slate-500">
-              {CONTRACT_SYMBOL} - Riesgo: ${riskUSD.toFixed(2)} - Objetivo: ${rewardUSD.toFixed(2)}
+              {CONTRACT_SYMBOL} - Riesgo: ${riskUSD.toFixed(2)} - Objetivo: ${rewardUSD.toFixed(2)} (netos de comisión) - P&L del día: {dailyPnL >= 0 ? '+' : '-'}${Math.abs(dailyPnL).toFixed(2)}
             </p>
 
+            {limitHit && (
+              <p className="text-xs text-rose-400 font-mono">
+                Límite de pérdida diaria alcanzado: sin nuevas entradas hoy.
+              </p>
+            )}
+
             {position ? (
+              <>
               <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
                 <span className="text-slate-300">
                   {position.type} {position.contracts}x {CONTRACT_SYMBOL} en {position.entry} - SL {position.sl} - TP {position.tp}
@@ -570,18 +681,35 @@ export default function Replay({ onSave }) {
                   Cerrar a mercado
                 </button>
               </div>
+              <div className="flex flex-wrap items-end gap-2 text-xs font-mono">
+                <div className="w-32">
+                  <label className="block text-[10px] text-slate-500 mb-1">Nuevo SL (precio)</label>
+                  <input type="number" step="any" value={editSl} onChange={(e) => setEditSl(e.target.value)} className={fieldClass} />
+                </div>
+                <div className="w-32">
+                  <label className="block text-[10px] text-slate-500 mb-1">Nuevo TP (precio)</label>
+                  <input type="number" step="any" value={editTp} onChange={(e) => setEditTp(e.target.value)} className={fieldClass} />
+                </div>
+                <button onClick={applyLevels} className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}>
+                  Aplicar
+                </button>
+                <button onClick={moveToBreakEven} className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}>
+                  Break-even
+                </button>
+              </div>
+              </>
             ) : (
               <div className="flex gap-2">
                 <button
                   onClick={() => openPosition('BUY')}
-                  disabled={atEnd}
+                  disabled={atEnd || limitHit}
                   className={`${btn} flex-1 bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
                 >
                   Comprar (BUY)
                 </button>
                 <button
                   onClick={() => openPosition('SELL')}
-                  disabled={atEnd}
+                  disabled={atEnd || limitHit}
                   className={`${btn} flex-1 bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
                 >
                   Vender (SELL)

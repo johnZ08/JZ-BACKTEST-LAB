@@ -137,6 +137,37 @@ export default function App() {
     });
   };
 
+  const handleExportJson = () => {
+    const blob = new Blob([JSON.stringify({ version: 1, trades }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jz-backtest-respaldo-${new Date().toLocaleDateString('en-CA')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportJson = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const list = Array.isArray(parsed) ? parsed : parsed.trades;
+      if (!Array.isArray(list) || !list.every((t) => t && typeof t.resultR === 'number' && t.id !== undefined)) {
+        throw new Error('formato');
+      }
+      requestAuthorization(() => {
+        const ids = new Set(trades.map((t) => t.id));
+        const fresh = list.filter((t) => !ids.has(t.id));
+        setTrades((prev) => [...prev, ...fresh]);
+        window.alert(`Importadas ${fresh.length} operaciones nuevas (${list.length - fresh.length} ya existían).`);
+      });
+    } catch {
+      window.alert('El archivo no es un respaldo válido de JZ Backtest Lab.');
+    }
+  };
+
   const handleDeleteTrade = (id) => {
     requestAuthorization(() => {
       setTrades(prev => prev.filter(t => t.id !== id));
@@ -182,10 +213,19 @@ export default function App() {
   const profitFactor = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : grossWin > 0 ? '∞' : '0.00';
   const totalUSD = filteredTrades.reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
 
+  let cumUSD = 0;
+  let peakUSD = 0;
+  let maxDDUSD = 0;
+  filteredTrades.forEach(t => {
+    cumUSD += t.pnlUSD || 0;
+    if (cumUSD > peakUSD) peakUSD = cumUSD;
+    maxDDUSD = Math.max(maxDDUSD, peakUSD - cumUSD);
+  });
+
   const handleExportCsv = () => {
-    const header = ['Fecha', 'Activo', 'Tipo', 'Sesion', 'Resultado', 'Entrada', 'SL', 'TP', 'RR', 'Retorno_R', 'Notas'];
+    const header = ['Fecha', 'Activo', 'Tipo', 'Sesion', 'Resultado', 'Entrada', 'SL', 'TP', 'RR', 'Retorno_R', 'PnL_USD', 'Notas'];
     const rows = filteredTrades.map(t => [
-      t.date, t.asset, t.type, t.session, t.outcome, t.entry ?? '', t.sl ?? '', t.tp ?? '', t.rr, t.resultR,
+      t.date, t.asset, t.type, t.session, t.outcome, t.entry ?? '', t.sl ?? '', t.tp ?? '', t.rr, t.resultR, t.pnlUSD ?? '',
       `"${(t.notes || '').replace(/"/g, '""')}"`
     ]);
     const csv = [header, ...rows].map(r => r.join(',')).join('\n');
@@ -356,7 +396,9 @@ export default function App() {
           </div>
         </header>
 
-        {view === 'replay' && <Replay onSave={handleSaveReplayTrades} />}
+        <div className={view === 'replay' ? '' : 'hidden'}>
+          <Replay onSave={handleSaveReplayTrades} savedTrades={trades} />
+        </div>
 
         <div className={view === 'registro' ? 'space-y-6' : 'hidden'}>
         {/* PERIODO Y SESIONES */}
@@ -490,6 +532,12 @@ export default function App() {
               {totalUSD >= 0 ? '+' : '-'}${Math.abs(totalUSD).toFixed(2)}
             </p>
             <p className="text-[10px] text-slate-500 font-mono">Solo trades del replay</p>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Max Drawdown ($)</p>
+            <p className="text-2xl font-bold text-rose-400 font-mono mt-1">-${maxDDUSD.toFixed(2)}</p>
+            <p className="text-[10px] text-slate-500 font-mono">Desde el pico de P&amp;L</p>
           </div>
         </section>
 
@@ -663,7 +711,7 @@ export default function App() {
               <h2 className="text-sm font-bold text-white font-mono capitalize">
                 Historial {isAllTime ? 'Completo' : `de ${monthLabel}`}
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {filteredTrades.length > 0 && (
                   <button
                     onClick={handleExportCsv}
@@ -672,6 +720,16 @@ export default function App() {
                     Exportar CSV
                   </button>
                 )}
+                <button
+                  onClick={handleExportJson}
+                  className="text-xs font-mono text-slate-300 hover:text-white border border-slate-700 rounded-lg px-3 py-1.5 transition cursor-pointer"
+                >
+                  Respaldo JSON
+                </button>
+                <label className="text-xs font-mono text-slate-300 hover:text-white border border-slate-700 rounded-lg px-3 py-1.5 transition cursor-pointer">
+                  Importar
+                  <input type="file" accept=".json" className="hidden" onChange={handleImportJson} />
+                </label>
                 {trades.length > 0 && (
                   <button
                     onClick={handleClearAll}
