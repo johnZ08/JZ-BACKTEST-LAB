@@ -1,45 +1,32 @@
 import React, { useState, useEffect } from 'react';
 
 export default function App() {
-  // -------------------------------------------------------------
-  // ESTADOS PRINCIPALES DE DATOS
-  // -------------------------------------------------------------
   const [trades, setTrades] = useState(() => {
     const saved = localStorage.getItem('jz_backtest_trades');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Estados de filtros (Solo Sesión, enfocado en Nasdaq)
   const [selectedSession, setSelectedSession] = useState('ALL');
-
-  // Estado del mes activo para el navegador tipo calendario
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [isAllTime, setIsAllTime] = useState(false);
 
-  // Estados del formulario
   const [type, setType] = useState('BUY');
   const [outcome, setOutcome] = useState('WIN');
   const [rr, setRr] = useState('2');
   const [session, setSession] = useState('NY');
   const [notes, setNotes] = useState('');
 
-  // -------------------------------------------------------------
-  // ESTADOS DE SEGURIDAD (MODAL DE PIN PARA ESCRITURA)
-  // -------------------------------------------------------------
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [authError, setAuthError] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
-  // PIN de seguridad solicitado
   const SECURE_PIN = '0801'; 
 
-  // Persistencia de trades
   useEffect(() => {
     localStorage.setItem('jz_backtest_trades', JSON.stringify(trades));
   }, [trades]);
 
-  // Funciones de navegación tipo Calendario
   const handlePrevMonth = () => {
     setIsAllTime(false);
     setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -53,9 +40,6 @@ export default function App() {
   const currentMonthKey = `\({currentMonthDate.getFullYear()}-\){String(currentMonthDate.getMonth() + 1).padStart(2, '0')}`;
   const monthLabel = currentMonthDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
 
-  // -------------------------------------------------------------
-  // CONTROL DE AUTORIZACIÓN (INTERCEPTOR DE ESCRITURA)
-  // -------------------------------------------------------------
   const requestAuthorization = (actionCallback) => {
     setPendingAction(() => actionCallback);
     setPinInput('');
@@ -78,12 +62,8 @@ export default function App() {
     }
   };
 
-  // -------------------------------------------------------------
-  // ACCIONES PROTEGIDAS DE ESCRITURA
-  // -------------------------------------------------------------
   const handleAddTradeSubmit = (e) => {
     e.preventDefault();
-    
     requestAuthorization(() => {
       const parsedRR = parseFloat(rr) || 0;
       const finalReturn = outcome === 'WIN' ? parsedRR : outcome === 'LOSS' ? -1 : 0;
@@ -121,9 +101,6 @@ export default function App() {
     });
   };
 
-  // -------------------------------------------------------------
-  // FILTRADO (SOLO MES Y SESIÓN - NAS100 BASE)
-  // -------------------------------------------------------------
   const filteredTrades = trades.filter(t => {
     const tMonthKey = t.monthKey || currentMonthKey;
     const matchesMonth = isAllTime ? true : tMonthKey === currentMonthKey;
@@ -131,15 +108,11 @@ export default function App() {
     return matchesMonth && matchesSession;
   });
 
-  // -------------------------------------------------------------
-  // CÁLCULOS ESTADÍSTICOS & MÉTRICAS AVANZADAS
-  // -------------------------------------------------------------
   const totalTrades = filteredTrades.length;
   const wins = filteredTrades.filter(t => t.outcome === 'WIN').length;
   const losses = filteredTrades.filter(t => t.outcome === 'LOSS').length;
   const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : '0.0';
   const totalR = filteredTrades.reduce((acc, t) => acc + t.resultR, 0).toFixed(2);
-
   const expectancy = totalTrades > 0 ? (parseFloat(totalR) / totalTrades).toFixed(2) : '0.00';
 
   const buyTrades = filteredTrades.filter(t => t.type === 'BUY');
@@ -217,7 +190,7 @@ className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text
 autoFocus
 required
 />{authError && (PIN incorrecto. Acceso denegado.)}setShowPinModal(false)}
-className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs font-mono cursor-pointer"CancelarAutorizar)}{/* Header */}JZ_BACKTEST_LAB NAS100 UATLaboratorio Institucional de Pruebas & Análisis EstadísticoVisualización Libre • Escritura Protegida 🔒{/* CONTROLES: NAVEGADOR MENSUAL Y SESIÓN */}‹Periodo Activo{isAllTime ? 'Todo el Historial' : monthLabel}setIsAllTime(!isAllTime)}
+className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs font-mono cursor-pointer"CancelarAutorizar)}JZ_BACKTEST_LAB NAS100 UATLaboratorio Institucional de Pruebas & Análisis EstadísticoVisualización Libre • Escritura Protegida 🔒‹Periodo Activo{isAllTime ? 'Todo el Historial' : monthLabel}setIsAllTime(!isAllTime)}
 className={px-3 py-1.5 rounded-lg text-xs font-mono border transition shadow-sm cursor-pointer ${ isAllTime  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}Todo›Sesión:{[
 { id: 'ALL', label: 'Todas' },
 { id: 'NY', label: 'NY' },
@@ -226,11 +199,11 @@ className={px-3 py-1.5 rounded-lg text-xs font-mono border transition shadow-sm 
 ].map((s) => (
 setSelectedSession(s.id)}
 className={px-3.5 py-1.5 rounded-lg font-bold transition border shadow-sm cursor-pointer ${ selectedSession === s.id ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}{s.label}
-))}{/* Tarjetas de Métricas Principales */}Total Trades{totalTrades}Win Rate Global{winRate}%Retorno Total (R)= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {totalR > 0 ? +${totalR}` : totalR}RExpectativa (EV)= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {expectancy > 0 ? +${expectancy}` : expectancy}RMax Drawdown-{formattedMaxDD}R{/* Tarjetas de Métricas Extra */}WR Compras (BUY)
+))}Total Trades{totalTrades}Win Rate Global{winRate}%Retorno Total (R)= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {totalR > 0 ? +${totalR}` : totalR}RExpectativa (EV)= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {expectancy > 0 ? +${expectancy}` : expectancy}RMax Drawdown-{formattedMaxDD}RWR Compras (BUY)
 {buyWinRate}%{buyTrades.length}WR Ventas (SELL)
 {sellWinRate}%{sellTrades.length}Racha Actual{currentStreak} {streakType}StreakDías Operados
 {uniqueDaysOperated} DíasConstanciaPromedio W / L
-+{avgWinR}R / -{avgLossR}RR:R Med{/* GRÁFICO: CURVA DE EQUIDAD */}Curva de Equidad Acumulada (NAS100){isAllTime ? 'Historial Completo' : monthLabel} {selectedSession !== 'ALL' && (${selectedSession})}{filteredTrades.length === 0 ? (No hay operaciones de Nasdaq registradas para los filtros seleccionados.) : (SVG{/* Formulario */}Registrar EjecuciónPIN Requerido 🔒Activo / ParDirecciónResultadoRatio R:R Objetivo
++{avgWinR}R / -{avgLossR}RR:R MedCurva de Equidad Acumulada (NAS100){isAllTime ? 'Historial Completo' : monthLabel} {selectedSession !== 'ALL' && (${selectedSession})}{filteredTrades.length === 0 ? (No hay operaciones de Nasdaq registradas para los filtros seleccionados.) : (SVGRegistrar EjecuciónPIN Requerido 🔒Activo / ParDirecciónResultadoRatio R:R Objetivo
 setRr(e.target.value)}
 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"
 required
@@ -239,6 +212,6 @@ setNotes(e.target.value)}
 placeholder="Ej. FVG M5 llenado en sesión NY..."
 rows="2"
 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"Agregar Operación
-PIN 0801{/* Tabla de Historial */}Historial {isAllTime ? 'Completo' : de ${monthLabel}}{trades.length > 0 && (Vaciar Registro 🔒
+PIN 0801Historial {isAllTime ? 'Completo' : de ${monthLabel}}{trades.length > 0 && (Vaciar Registro 🔒
 )}{filteredTrades.length === 0 ? (No hay ejecuciones de Nasdaq registradas en este periodo.) : ({filteredTrades.map((t, idx) => ())}FechaActivoTipoSesiónResultadoRetorno RAcción#{idx + 1}{t.date}{t.asset}{t.type}{t.session}{t.outcome}0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}}> {t.resultR > 0 ? +${t.resultR}R` : `${t.resultR}R`}handleDeleteTrade(t.id)}className="text-slate-500 hover:text-rose-400 px-2 py-1 transition cursor-pointer"title="Eliminar (Requiere PIN 0801)"✕)});
 }
