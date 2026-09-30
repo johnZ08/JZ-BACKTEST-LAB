@@ -1,28 +1,40 @@
 import React, { useState, useEffect } from 'react';
 
 export default function App() {
-  // Cargar trades guardados
+  // -------------------------------------------------------------
+  // ESTADOS PRINCIPALES DE DATOS
+  // -------------------------------------------------------------
   const [trades, setTrades] = useState(() => {
     const saved = localStorage.getItem('jz_backtest_trades');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Estado del filtro de sesión
+  // Estados de filtros (Solo Sesión, enfocado en Nasdaq)
   const [selectedSession, setSelectedSession] = useState('ALL');
 
-  // Estado del mes activo para el navegador tipo calendario (Format YYYY-MM)
+  // Estado del mes activo para el navegador tipo calendario
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [isAllTime, setIsAllTime] = useState(false);
 
-  // Estado del formulario
-  const [asset, setAsset] = useState('NAS100');
+  // Estados del formulario
   const [type, setType] = useState('BUY');
   const [outcome, setOutcome] = useState('WIN');
   const [rr, setRr] = useState('2');
   const [session, setSession] = useState('NY');
   const [notes, setNotes] = useState('');
 
-  // Persistencia
+  // -------------------------------------------------------------
+  // ESTADOS DE SEGURIDAD (MODAL DE PIN PARA ESCRITURA)
+  // -------------------------------------------------------------
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [authError, setAuthError] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // Guarda la acción que intentaba hacer
+
+  // PIN de seguridad solicitado
+  const SECURE_PIN = '0801'; 
+
+  // Persistencia de trades
   useEffect(() => {
     localStorage.setItem('jz_backtest_trades', JSON.stringify(trades));
   }, [trades]);
@@ -38,48 +50,80 @@ export default function App() {
     setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  // Formatear mes visible (Ej. "Septiembre 2026")
   const currentMonthKey = `\({currentMonthDate.getFullYear()}-\){String(currentMonthDate.getMonth() + 1).padStart(2, '0')}`;
   const monthLabel = currentMonthDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
 
-  // Agregar trade
-  const handleAddTrade = (e) => {
+  // -------------------------------------------------------------
+  // CONTROL DE AUTORIZACIÓN (INTERCEPTOR DE ESCRITURA)
+  // -------------------------------------------------------------
+  const requestAuthorization = (actionCallback) => {
+    setPendingAction(() => actionCallback);
+    setPinInput('');
+    setAuthError(false);
+    setShowPinModal(true);
+  };
+
+  const handleVerifyPin = (e) => {
     e.preventDefault();
-    const parsedRR = parseFloat(rr) || 0;
-    const finalReturn = outcome === 'WIN' ? parsedRR : outcome === 'LOSS' ? -1 : 0;
-    const now = new Date();
-
-    const newTrade = {
-      id: Date.now(),
-      date: now.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-      monthKey: `\({now.getFullYear()}-\){String(now.getMonth() + 1).padStart(2, '0')}`,
-      asset,
-      type,
-      outcome,
-      rr: parsedRR,
-      resultR: finalReturn,
-      session,
-      notes
-    };
-
-    setTrades([...trades, newTrade]);
-    setNotes('');
-  };
-
-  // Eliminar trade
-  const handleDeleteTrade = (id) => {
-    setTrades(trades.filter(t => t.id !== id));
-  };
-
-  // Vaciar historial
-  const handleClearAll = () => {
-    if (confirm('¿Seguro que deseas borrar todos los registros de la base de datos?')) {
-      setTrades([]);
+    if (pinInput === SECURE_PIN) {
+      setShowPinModal(false);
+      setAuthError(false);
+      if (pendingAction) {
+        pendingAction(); // Ejecuta la acción que estaba bloqueada
+        setPendingAction(null);
+      }
+    } else {
+      setAuthError(true);
+      setPinInput('');
     }
   };
 
   // -------------------------------------------------------------
-  // FILTRADO DUAL: POR MES Y POR SESIÓN
+  // ACCIONES PROTEGIDAS DE ESCRITURA
+  // -------------------------------------------------------------
+  const handleAddTradeSubmit = (e) => {
+    e.preventDefault();
+    
+    // Interceptamos con PIN antes de agregar
+    requestAuthorization(() => {
+      const parsedRR = parseFloat(rr) || 0;
+      const finalReturn = outcome === 'WIN' ? parsedRR : outcome === 'LOSS' ? -1 : 0;
+      const now = new Date();
+
+      const newTrade = {
+        id: Date.now(),
+        date: now.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        monthKey: `\({now.getFullYear()}-\){String(now.getMonth() + 1).padStart(2, '0')}`,
+        asset: 'NAS100', // Fijo en Nasdaq
+        type,
+        outcome,
+        rr: parsedRR,
+        resultR: finalReturn,
+        session,
+        notes
+      };
+
+      setTrades(prev => [...prev, newTrade]);
+      setNotes('');
+    });
+  };
+
+  const handleDeleteTrade = (id) => {
+    requestAuthorization(() => {
+      setTrades(prev => prev.filter(t => t.id !== id));
+    });
+  };
+
+  const handleClearAll = () => {
+    requestAuthorization(() => {
+      if (confirm('¿Seguro que deseas borrar todos los registros de la base de datos?')) {
+        setTrades([]);
+      }
+    });
+  };
+
+  // -------------------------------------------------------------
+  // FILTRADO (SOLO MES Y SESIÓN - NAS100 BASE)
   // -------------------------------------------------------------
   const filteredTrades = trades.filter(t => {
     const tMonthKey = t.monthKey || currentMonthKey;
@@ -109,17 +153,34 @@ export default function App() {
   const sellWins = sellTrades.filter(t => t.outcome === 'WIN').length;
   const sellWinRate = sellTrades.length > 0 ? ((sellWins / sellTrades.length) * 100).toFixed(0) : '0';
 
-  // Promedio de R por ganador y perdedor
+  // Promedios R
   const winningTradesList = filteredTrades.filter(t => t.resultR > 0);
   const losingTradesList = filteredTrades.filter(t => t.resultR < 0);
   const avgWinR = winningTradesList.length > 0 ? (winningTradesList.reduce((acc, t) => acc + t.resultR, 0) / winningTradesList.length).toFixed(2) : '0.00';
   const avgLossR = losingTradesList.length > 0 ? (Math.abs(losingTradesList.reduce((acc, t) => acc + t.resultR, 0)) / losingTradesList.length).toFixed(2) : '0.00';
 
-  // Curva de equidad y Max Drawdown (R)
+  // Racha actual (Streak)
+  let currentStreak = 0;
+  let streakType = 'NONE';
+  if (filteredTrades.length > 0) {
+    const lastOutcome = filteredTrades[filteredTrades.length - 1].outcome;
+    streakType = lastOutcome;
+    for (let i = filteredTrades.length - 1; i >= 0; i--) {
+      if (filteredTrades[i].outcome === lastOutcome) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Días Únicos Operados (Constancia)
+  const uniqueDaysOperated = new Set(filteredTrades.map(t => t.date)).size;
+
+  // Curva de equidad y Max Drawdown
   let cumulative = 0;
   let peak = 0;
   let maxDrawdown = 0;
-
   const equityData = [{ tradeNum: 0, R: 0, label: 'Inicio' }];
 
   filteredTrades.forEach((t, index) => {
@@ -131,17 +192,16 @@ export default function App() {
     equityData.push({
       tradeNum: index + 1,
       R: parseFloat(cumulative.toFixed(2)),
-      label: `#\({index + 1} (\){t.asset})`
+      label: `#${index + 1}`
     });
   });
 
   const formattedMaxDD = maxDrawdown.toFixed(2);
 
-  // Dimensiones para SVG
+  // Dimensiones SVG
   const svgWidth = 800;
   const svgHeight = 220;
   const padding = 40;
-
   const minR = Math.min(0, ...equityData.map(d => d.R));
   const maxR = Math.max(5, ...equityData.map(d => d.R));
   const rangeR = maxR - minR || 1;
