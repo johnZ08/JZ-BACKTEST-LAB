@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
-export default function App() {
+import React, { useState, useEffect } from 'react';export default function App() {
   // -------------------------------------------------------------
   // ESTADOS PRINCIPALES DE DATOS
   // -------------------------------------------------------------
@@ -29,7 +27,7 @@ export default function App() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [authError, setAuthError] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null); // Guarda la acción que intentaba hacer
+  const [pendingAction, setPendingAction] = useState(null);
 
   // PIN de seguridad solicitado
   const SECURE_PIN = '0801'; 
@@ -69,7 +67,7 @@ export default function App() {
       setShowPinModal(false);
       setAuthError(false);
       if (pendingAction) {
-        pendingAction(); // Ejecuta la acción que estaba bloqueada
+        pendingAction();
         setPendingAction(null);
       }
     } else {
@@ -84,7 +82,6 @@ export default function App() {
   const handleAddTradeSubmit = (e) => {
     e.preventDefault();
     
-    // Interceptamos con PIN antes de agregar
     requestAuthorization(() => {
       const parsedRR = parseFloat(rr) || 0;
       const finalReturn = outcome === 'WIN' ? parsedRR : outcome === 'LOSS' ? -1 : 0;
@@ -94,7 +91,7 @@ export default function App() {
         id: Date.now(),
         date: now.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         monthKey: `\({now.getFullYear()}-\){String(now.getMonth() + 1).padStart(2, '0')}`,
-        asset: 'NAS100', // Fijo en Nasdaq
+        asset: 'NAS100',
         type,
         outcome,
         rr: parsedRR,
@@ -141,10 +138,8 @@ export default function App() {
   const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : '0.0';
   const totalR = filteredTrades.reduce((acc, t) => acc + t.resultR, 0).toFixed(2);
 
-  // Expectativa Matemática (EV)
   const expectancy = totalTrades > 0 ? (parseFloat(totalR) / totalTrades).toFixed(2) : '0.00';
 
-  // Métricas por Tipo (BUY vs SELL)
   const buyTrades = filteredTrades.filter(t => t.type === 'BUY');
   const buyWins = buyTrades.filter(t => t.outcome === 'WIN').length;
   const buyWinRate = buyTrades.length > 0 ? ((buyWins / buyTrades.length) * 100).toFixed(0) : '0';
@@ -153,13 +148,11 @@ export default function App() {
   const sellWins = sellTrades.filter(t => t.outcome === 'WIN').length;
   const sellWinRate = sellTrades.length > 0 ? ((sellWins / sellTrades.length) * 100).toFixed(0) : '0';
 
-  // Promedios R
   const winningTradesList = filteredTrades.filter(t => t.resultR > 0);
   const losingTradesList = filteredTrades.filter(t => t.resultR < 0);
   const avgWinR = winningTradesList.length > 0 ? (winningTradesList.reduce((acc, t) => acc + t.resultR, 0) / winningTradesList.length).toFixed(2) : '0.00';
   const avgLossR = losingTradesList.length > 0 ? (Math.abs(losingTradesList.reduce((acc, t) => acc + t.resultR, 0)) / losingTradesList.length).toFixed(2) : '0.00';
 
-  // Racha actual (Streak)
   let currentStreak = 0;
   let streakType = 'NONE';
   if (filteredTrades.length > 0) {
@@ -174,10 +167,8 @@ export default function App() {
     }
   }
 
-  // Días Únicos Operados (Constancia)
   const uniqueDaysOperated = new Set(filteredTrades.map(t => t.date)).size;
 
-  // Curva de equidad y Max Drawdown
   let cumulative = 0;
   let peak = 0;
   let maxDrawdown = 0;
@@ -198,7 +189,6 @@ export default function App() {
 
   const formattedMaxDD = maxDrawdown.toFixed(2);
 
-  // Dimensiones SVG
   const svgWidth = 800;
   const svgHeight = 220;
   const padding = 40;
@@ -219,3 +209,190 @@ export default function App() {
   const zeroY = getY(0);
 
   return (
+{showPinModal && (
+
+Acción Protegida
+
+Ingresa PIN de Autorización
+Se requiere autenticación para alterar los registros del Nasdaq.
+
+setPinInput(e.target.value)}
+placeholder="••••"
+className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-2xl tracking-widest text-white focus:outline-none focus:border-emerald-500 font-mono transition"
+autoFocus
+required
+/>
+
+{authError && (
+
+PIN incorrecto. Acceso denegado.
+
+)}
+
+setShowPinModal(false)}
+className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs font-mono cursor-pointer"
+
+Cancelar
+
+Autorizar
+
+)}
+
+{/* Header */}
+
+JZ_BACKTEST_LAB NAS100 UAT
+Laboratorio Institucional de Pruebas & Análisis Estadístico
+
+Visualización Libre • Escritura Protegida 🔒
+
+{/* CONTROLES: NAVEGADOR MENSUAL Y SESIÓN */}
+
+‹
+
+Periodo Activo
+
+{isAllTime ? 'Todo el Historial' : monthLabel}
+
+setIsAllTime(!isAllTime)}
+className={px-3 py-1.5 rounded-lg text-xs font-mono border transition shadow-sm cursor-pointer ${ isAllTime  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}
+
+Todo
+
+›
+
+Sesión:
+
+{[
+{ id: 'ALL', label: 'Todas' },
+{ id: 'NY', label: 'NY' },
+{ id: 'LONDON', label: 'Londres' },
+{ id: 'ASIA', label: 'Asia' }
+].map((s) => (
+setSelectedSession(s.id)}
+className={px-3.5 py-1.5 rounded-lg font-bold transition border shadow-sm cursor-pointer ${ selectedSession === s.id ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}
+
+{s.label}
+))}
+
+{/* Tarjetas de Métricas Principales */}
+
+Total Trades
+
+{totalTrades}
+
+Win Rate Global
+
+{winRate}%
+
+Retorno Total (R)
+
+= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {totalR > 0 ? +${totalR}` : totalR}R
+
+Expectativa (EV)
+
+= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {expectancy > 0 ? +${expectancy}` : expectancy}R
+
+Max Drawdown
+
+-{formattedMaxDD}R
+
+{/* Tarjetas de Métricas Extra */}
+
+WR Compras (BUY)
+{buyWinRate}%
+
+{buyTrades.length}
+
+WR Ventas (SELL)
+{sellWinRate}%
+
+{sellTrades.length}
+
+Racha Actual
+
+{currentStreak} {streakType}
+
+Streak
+
+Días Operados
+{uniqueDaysOperated} Días
+
+Constancia
+
+Promedio W / L
++{avgWinR}R / -{avgLossR}R
+
+R:R Med
+
+{/* GRÁFICO: CURVA DE EQUIDAD */}
+
+Curva de Equidad Acumulada (NAS100)
+{isAllTime ? 'Historial Completo' : monthLabel} {selectedSession !== 'ALL' && (${selectedSession})}
+{filteredTrades.length === 0 ? (
+
+No hay operaciones de Nasdaq registradas para los filtros seleccionados.
+
+) : (
+
+SVG
+
+
+{/* Formulario */}
+
+Registrar Ejecución
+PIN Requerido 🔒
+
+Activo / Par
+
+Dirección
+
+
+Resultado
+
+
+Ratio R:R Objetivo
+setRr(e.target.value)}
+className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"
+required
+/>
+
+Sesión
+
+
+Notas / Confluencias (FVG, Liquidez, etc.)
+setNotes(e.target.value)}
+placeholder="Ej. FVG M5 llenado en sesión NY..."
+rows="2"
+className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"
+
+Agregar Operación
+PIN 0801
+
+{/* Tabla de Historial */}
+
+Historial {isAllTime ? 'Completo' : de ${monthLabel}}
+{trades.length > 0 && (
+
+Vaciar Registro 🔒
+)}
+
+{filteredTrades.length === 0 ? (
+
+No hay ejecuciones de Nasdaq registradas en este periodo.
+
+) : (
+
+{filteredTrades.map((t, idx) => (
+
+))}
+
+FechaActivoTipoSesiónResultadoRetorno RAcción#{idx + 1}{t.date}{t.asset}{t.type}{t.session}{t.outcome}0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}}> {t.resultR > 0 ? +${t.resultR}R` : `${t.resultR}R`}handleDeleteTrade(t.id)}
+className="text-slate-500 hover:text-rose-400 px-2 py-1 transition cursor-pointer"
+title="Eliminar (Requiere PIN 0801)"
+
+✕
+
+)}
+
+);
+}
