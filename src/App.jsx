@@ -184,191 +184,34 @@ export default function App() {
   const zeroY = getY(0);
 
   return (
-{showPinModal && (
-
-Acción Protegida
-
-Ingresa PIN de Autorización
-Se requiere autenticación para alterar los registros del Nasdaq.
-
-setPinInput(e.target.value)}
+{showPinModal && (Acción ProtegidaIngresa PIN de AutorizaciónSe requiere autenticación para alterar los registros del Nasdaq.setPinInput(e.target.value)}
 placeholder="••••"
 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-2xl tracking-widest text-white focus:outline-none focus:border-emerald-500 font-mono transition"
 autoFocus
 required
-/>
-
-{authError && (
-
-PIN incorrecto. Acceso denegado.
-
-)}
-
-setShowPinModal(false)}
-className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs font-mono cursor-pointer"
-
-Cancelar
-
-Autorizar
-
-)}
-
-JZ_BACKTEST_LAB NAS100 UAT
-Laboratorio Institucional de Pruebas & Análisis Estadístico
-
-Visualización Libre • Escritura Protegida 🔒
-
-‹
-
-Periodo Activo
-
-{isAllTime ? 'Todo el Historial' : monthLabel}
-
-setIsAllTime(!isAllTime)}
-className={px-3 py-1.5 rounded-lg text-xs font-mono border transition shadow-sm cursor-pointer ${ isAllTime  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}
-
-Todo
-
-›
-
-Sesión:
-
-{[
+/>{authError && (PIN incorrecto. Acceso denegado.)}setShowPinModal(false)}
+className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs font-mono cursor-pointer"CancelarAutorizar)}JZ_BACKTEST_LAB NAS100 UATLaboratorio Institucional de Pruebas & Análisis EstadísticoVisualización Libre • Escritura Protegida 🔒‹Periodo Activo{isAllTime ? 'Todo el Historial' : monthLabel}setIsAllTime(!isAllTime)}
+className={px-3 py-1.5 rounded-lg text-xs font-mono border transition shadow-sm cursor-pointer ${ isAllTime  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}Todo›Sesión:{[
 { id: 'ALL', label: 'Todas' },
 { id: 'NY', label: 'NY' },
 { id: 'LONDON', label: 'Londres' },
 { id: 'ASIA', label: 'Asia' }
 ].map((s) => (
 setSelectedSession(s.id)}
-className={px-3.5 py-1.5 rounded-lg font-bold transition border shadow-sm cursor-pointer ${ selectedSession === s.id ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}
-
-{s.label}
-))}
-
-Total Trades
-
-{totalTrades}
-
-Win Rate Global
-
-{winRate}%
-
-Retorno Total (R)
-
-= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {totalR > 0 ? +${totalR}` : totalR}R
-
-Expectativa (EV)
-
-= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {expectancy > 0 ? +${expectancy}` : expectancy}R
-
-Max Drawdown
-
--{formattedMaxDD}R
-
-WR Compras (BUY)
-{buyWinRate}%
-
-{buyTrades.length}
-
-WR Ventas (SELL)
-{sellWinRate}%
-
-{sellTrades.length}
-
-Racha Actual
-
-{currentStreak} {streakType}
-
-Streak
-
-Días Operados
-{uniqueDaysOperated} Días
-
-Constancia
-
-Promedio W / L
-+{avgWinR}R / -{avgLossR}R
-
-R:R Med
-
-Curva de Equidad Acumulada (NAS100)
-{isAllTime ? 'Historial Completo' : monthLabel} {selectedSession !== 'ALL' && (${selectedSession})}
-{filteredTrades.length === 0 ? (
-
-No hay operaciones de Nasdaq registradas para los filtros seleccionados.
-
-) : (
-
-SVG
-
-Registrar Ejecución
-PIN Requerido 🔒
-
-Activo / Par
-
-Dirección
-
-
-BUY (Largo)
-
-SELL (Corto)
-Enviar
-Resultado
-
-
-WIN
-
-LOSS
-
-Break Even
-Enviar
-Ratio R:R Objetivo
+className={px-3.5 py-1.5 rounded-lg font-bold transition border shadow-sm cursor-pointer ${ selectedSession === s.id ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white' }}{s.label}
+))}Total Trades{totalTrades}Win Rate Global{winRate}%Retorno Total (R)= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {totalR > 0 ? +${totalR}` : totalR}RExpectativa (EV)= 0 ? 'text-emerald-400' : 'text-rose-400'}}> {expectancy > 0 ? +${expectancy}` : expectancy}RMax Drawdown-{formattedMaxDD}RWR Compras (BUY)
+{buyWinRate}%{buyTrades.length}WR Ventas (SELL)
+{sellWinRate}%{sellTrades.length}Racha Actual{currentStreak} {streakType}StreakDías Operados
+{uniqueDaysOperated} DíasConstanciaPromedio W / L
++{avgWinR}R / -{avgLossR}RR:R MedCurva de Equidad Acumulada (NAS100){isAllTime ? 'Historial Completo' : monthLabel} {selectedSession !== 'ALL' && (${selectedSession})}{filteredTrades.length === 0 ? (No hay operaciones de Nasdaq registradas para los filtros seleccionados.) : (SVGRegistrar EjecuciónPIN Requerido 🔒Activo / ParDirecciónResultadoRatio R:R Objetivo
 setRr(e.target.value)}
 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"
 required
-/>
-
-Sesión
-
-
-New York
-
-Asia
-
-Londres
-Enviar
-Notas / Confluencias (FVG, Liquidez, etc.)
+/>SesiónNotas / Confluencias (FVG, Liquidez, etc.)
 setNotes(e.target.value)}
 placeholder="Ej. FVG M5 llenado en sesión NY..."
 rows="2"
-className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"
-
-Agregar Operación
-PIN 0801
-
-Historial {isAllTime ? 'Completo' : de ${monthLabel}}
-{trades.length > 0 && (
-
-Vaciar Registro 🔒
-)}
-
-{filteredTrades.length === 0 ? (
-
-No hay ejecuciones de Nasdaq registradas en este periodo.
-
-) : (
-
-{filteredTrades.map((t, idx) => (
-
-))}
-
-Fecha	Activo	Tipo	Sesión	Resultado	Retorno R	Acción
-#{idx + 1}	{t.date}	{t.asset}	{t.type}	{t.session}	{t.outcome}	0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}}> {t.resultR > 0 ?+t.resultRR‘:‘{t.resultR}R`}	
-handleDeleteTrade(t.id)} className="text-slate-500 hover:text-rose-400 px-2 py-1 transition cursor-pointer" title="Eliminar (Requiere PIN 0801)"
-
-✕
-
-)}
-
-);
+className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"Agregar Operación
+PIN 0801Historial {isAllTime ? 'Completo' : de ${monthLabel}}{trades.length > 0 && (Vaciar Registro 🔒
+)}{filteredTrades.length === 0 ? (No hay ejecuciones de Nasdaq registradas en este periodo.) : ({filteredTrades.map((t, idx) => ())}FechaActivoTipoSesiónResultadoRetorno RAcción#{idx + 1}{t.date}{t.asset}{t.type}{t.session}{t.outcome}0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}}> {t.resultR > 0 ? +${t.resultR}R` : `${t.resultR}R`}handleDeleteTrade(t.id)}className="text-slate-500 hover:text-rose-400 px-2 py-1 transition cursor-pointer"title="Eliminar (Requiere PIN 0801)"✕)});
 }
