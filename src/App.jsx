@@ -180,6 +180,7 @@ export default function App() {
   const grossWin = winningTradesList.reduce((acc, t) => acc + t.resultR, 0);
   const grossLoss = Math.abs(losingTradesList.reduce((acc, t) => acc + t.resultR, 0));
   const profitFactor = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : grossWin > 0 ? '∞' : '0.00';
+  const totalUSD = filteredTrades.reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
 
   const handleExportCsv = () => {
     const header = ['Fecha', 'Activo', 'Tipo', 'Sesion', 'Resultado', 'Entrada', 'SL', 'TP', 'RR', 'Retorno_R', 'Notas'];
@@ -482,6 +483,14 @@ export default function App() {
             <p className="text-2xl font-bold text-white font-mono mt-1">{profitFactor}</p>
             <p className="text-[10px] text-slate-500 font-mono">Ganancia / Pérdida</p>
           </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">P&amp;L Total ($)</p>
+            <p className={`text-2xl font-bold font-mono mt-1 ${totalUSD >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {totalUSD >= 0 ? '+' : '-'}${Math.abs(totalUSD).toFixed(2)}
+            </p>
+            <p className="text-[10px] text-slate-500 font-mono">Solo trades del replay</p>
+          </div>
         </section>
 
         {/* CURVA DE EQUIDAD */}
@@ -692,6 +701,7 @@ export default function App() {
                       <th className="py-2 pr-3">Retorno R</th>
                       <th className="py-2 pr-3">Entrada / SL / TP</th>
                       <th className="py-2 pr-3">R:R</th>
+                      <th className="py-2 pr-3">P&amp;L $</th>
                       <th className="py-2 pr-3">Notas</th>
                       <th className="py-2 text-right">Acción</th>
                     </tr>
@@ -718,6 +728,9 @@ export default function App() {
                           {t.entry !== undefined ? `${t.entry} / ${t.sl} / ${t.tp}` : '—'}
                         </td>
                         <td className="py-2 pr-3 text-slate-400">{t.rr ? t.rr.toFixed(2) : '—'}</td>
+                        <td className={`py-2 pr-3 font-bold ${t.pnlUSD > 0 ? 'text-emerald-400' : t.pnlUSD < 0 ? 'text-rose-400' : 'text-slate-500'}`}>
+                          {t.pnlUSD !== undefined ? `${t.pnlUSD >= 0 ? '+' : '-'}$${Math.abs(t.pnlUSD).toFixed(2)}` : '—'}
+                        </td>
                         <td className="py-2 pr-3 text-slate-400 max-w-[200px] truncate" title={t.notes || ''}>
                           {t.notes || '—'}
                         </td>

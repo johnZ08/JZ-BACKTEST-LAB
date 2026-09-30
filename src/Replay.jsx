@@ -2,6 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Desfase en horas para alinear las velas de 1h/4h con tu broker (prueba 0, 1, 2, 3...)
 const ALIGN_OFFSET_H = 0;
+
+// Contrato que operas: MNQ = Micro E-mini Nasdaq-100, $2 por punto (tick de 0.25 = $0.50).
+// Cambia el código cuando cambie el vencimiento (H=mar, M=jun, U=sep, Z=dic + último dígito del año).
+const CONTRACT_SYMBOL = 'MNQZ6';
+const DEFAULT_POINT_VALUE = 2;
 const VISIBLE = 100; // velas visibles en pantalla
 const SPEEDS = [1, 2, 5, 10, 20]; // velas base por segundo
 const TIMEFRAMES = [
@@ -69,18 +74,46 @@ const detectBase = (rows) => {
   return diffs[Math.floor(diffs.length / 2)];
 };
 
-// Datos simulados solo para probar el replay (NO sirven para evaluar estrategias)
+// Datos simulados solo para probar el replay (NO sirven para evaluar estrategias).
+// Imitan rasgos típicos del Nasdaq: volatilidad por hora (fuerte en la apertura de NY),
+// rachas de volatilidad, tendencias cortas, colas gordas, gaps entre sesiones y tick de 0.25.
 const genSample = () => {
-  let seed = 42;
+  let seed = (Date.now() % 2147483646) + 1; // distinto en cada clic
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const gauss = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+  const tick = (x) => Math.round(x * 4) / 4;
+  // volatilidad base (puntos por minuto) según la hora del archivo, leída como hora de Nueva York
+  const baseVol = (h, m) => {
+    const t = h + m / 60;
+    if (t >= 9.5 && t < 11) return 2.8;
+    if (t >= 14 && t < 16) return 2.0;
+    if (t >= 11 && t < 14) return 1.4;
+    if (t >= 8 && t < 9.5) return 1.3;
+    if (t >= 3 && t < 8) return 1.0;
+    if (t >= 16 && t < 17) return 0.9;
+    return 0.6;
+  };
   const out = [];
-  let price = 18000;
-  const start = Date.UTC(2025, 0, 6, 0, 0) / 1000;
-  for (let i = 0; i < 1440 * 5; i++) {
-    const o = price;
-    const c = o + (rnd() - 0.5) * 6;
-    out.push({ t: start + i * 60, o, h: Math.max(o, c) + rnd() * 3, l: Math.min(o, c) - rnd() * 3, c });
-    price = c;
+  let price = 30500;
+  let trend = 0;
+  let volMult = 1;
+  const start = Date.UTC(2025, 0, 5, 18, 0) / 1000; // domingo 18:00
+  for (let day = 0; day < 5; day++) {
+    price += gauss() * 15; // gap entre sesiones
+    for (let i = 0; i < 1380; i++) {
+      const t = start + day * 86400 + i * 60;
+      const d = new Date(t * 1000);
+      const sigma = baseVol(d.getUTCHours(), d.getUTCMinutes()) * volMult;
+      const shock = gauss() * (rnd() < 0.02 ? 3 : 1);
+      trend = 0.97 * trend + gauss() * 0.04 * sigma;
+      volMult = Math.min(3, 0.94 * volMult + 0.06 * (0.5 + Math.abs(shock) * 0.7));
+      const o = tick(price);
+      const c = tick(o + trend + sigma * shock);
+      const h = tick(Math.max(o, c) + Math.abs(gauss()) * sigma * 0.5);
+      const l = tick(Math.min(o, c) - Math.abs(gauss()) * sigma * 0.5);
+      out.push({ t, o, h, l, c });
+      price = c;
+    }
   }
   return out;
 };
@@ -130,6 +163,8 @@ export default function Replay({ onSave }) {
   const [slPts, setSlPts] = useState('20');
   const [tpPts, setTpPts] = useState('40');
   const [session, setSession] = useState('NY');
+  const [contracts, setContracts] = useState('1');
+  const [pointValue, setPointValue] = useState(String(DEFAULT_POINT_VALUE));
   const [position, setPosition] = useState(null);
   const [sessionTrades, setSessionTrades] = useState([]);
   const [error, setError] = useState('');
@@ -204,7 +239,7 @@ export default function Replay({ onSave }) {
         dateISO: day,
         date: `${d}/${m}/${y}`,
         monthKey: `${y}-${m}`,
-        asset: 'NAS100',
+        asset: CONTRACT_SYMBOL,
         type: p.type,
         outcome,
         entry: p.entry,
@@ -212,6 +247,9 @@ export default function Replay({ onSave }) {
         tp: p.tp,
         rr,
         resultR: round2(r),
+        contracts: p.contracts,
+        pointValue: p.pointValue,
+        pnlUSD: round2(r * risk * p.pointValue * p.contracts),
         session: p.session,
         notes: `Replay ${tfLabel} - cierre ${fmtTime(data[exitIdx].t)}`
       }
@@ -273,7 +311,9 @@ export default function Replay({ onSave }) {
       sl: round2(type === 'BUY' ? price - sl : price + sl),
       tp: round2(type === 'BUY' ? price + tp : price - tp),
       openTime: data[pos].t,
-      session
+      session,
+      contracts: Math.max(1, Math.floor(Number(contracts)) || 1),
+      pointValue: Number(pointValue) || DEFAULT_POINT_VALUE
     });
     setError('');
   };
@@ -282,6 +322,11 @@ export default function Replay({ onSave }) {
     ? ((position.type === 'BUY' ? 1 : -1) * (data[pos].c - position.entry)) /
       Math.abs(position.entry - position.sl)
     : 0;
+
+  const floatPts = position ? (position.type === 'BUY' ? 1 : -1) * (data[pos].c - position.entry) : 0;
+  const floatUSD = position ? floatPts * position.pointValue * position.contracts : 0;
+  const riskUSD = (Number(slPts) || 0) * (Number(pointValue) || 0) * (Math.floor(Number(contracts)) || 0);
+  const rewardUSD = (Number(tpPts) || 0) * (Number(pointValue) || 0) * (Math.floor(Number(contracts)) || 0);
 
   const closeAtMarket = () => {
     const r = round2(floatR);
@@ -357,9 +402,18 @@ export default function Replay({ onSave }) {
       hline(position.entry, '#94a3b8', 'E');
       hline(position.sl, '#f43f5e', 'SL');
       hline(position.tp, '#10b981', 'TP');
+      const up = floatUSD >= 0;
+      ctx.font = 'bold 15px monospace';
+      ctx.fillStyle = up ? '#10b981' : '#f43f5e';
+      ctx.fillText(
+        `${up ? '+' : ''}${floatPts.toFixed(2)} pts   ${up ? '+' : '-'}$${Math.abs(floatUSD).toFixed(2)}`,
+        10,
+        22
+      );
+      ctx.font = '11px monospace';
     }
     hline(visibleCandles[visibleCandles.length - 1].c, '#38bdf8', '');
-  }, [visibleCandles, position]);
+  }, [visibleCandles, position, floatPts, floatUSD]);
 
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
@@ -473,7 +527,7 @@ export default function Replay({ onSave }) {
 
           {/* OPERATIVA */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div>
                 <label className="block text-[10px] text-slate-500 font-mono mb-1">SL (puntos)</label>
                 <input type="number" min="0" step="any" value={slPts} onChange={(e) => setSlPts(e.target.value)} disabled={!!position} className={fieldClass} />
@@ -490,16 +544,27 @@ export default function Replay({ onSave }) {
                   <option value="ASIA">Asia</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Contratos</label>
+                <input type="number" min="1" step="1" value={contracts} onChange={(e) => setContracts(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Valor por punto ($)</label>
+                <input type="number" min="0" step="any" value={pointValue} onChange={(e) => setPointValue(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
             </div>
+
+            <p className="text-[11px] font-mono text-slate-500">
+              {CONTRACT_SYMBOL} - Riesgo: ${riskUSD.toFixed(2)} - Objetivo: ${rewardUSD.toFixed(2)}
+            </p>
 
             {position ? (
               <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
                 <span className="text-slate-300">
-                  {position.type} en {position.entry} - SL {position.sl} - TP {position.tp}
+                  {position.type} {position.contracts}x {CONTRACT_SYMBOL} en {position.entry} - SL {position.sl} - TP {position.tp}
                 </span>
-                <span className={floatR >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
-                  {floatR >= 0 ? '+' : ''}
-                  {floatR.toFixed(2)}R
+                <span className={`font-bold ${floatUSD >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {floatPts >= 0 ? '+' : ''}{floatPts.toFixed(2)} pts - {floatUSD >= 0 ? '+' : '-'}${Math.abs(floatUSD).toFixed(2)} - {floatR >= 0 ? '+' : ''}{floatR.toFixed(2)}R
                 </span>
                 <button onClick={closeAtMarket} className={`${btn} bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700`}>
                   Cerrar a mercado
@@ -546,8 +611,7 @@ export default function Replay({ onSave }) {
                       {t.date} - {t.type} - {t.session}
                     </span>
                     <span className={t.resultR > 0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}>
-                      {t.resultR > 0 ? '+' : ''}
-                      {t.resultR}R
+                      {t.resultR > 0 ? '+' : ''}{t.resultR}R ({t.pnlUSD >= 0 ? '+' : '-'}${Math.abs(t.pnlUSD).toFixed(2)})
                     </span>
                   </li>
                 ))}
