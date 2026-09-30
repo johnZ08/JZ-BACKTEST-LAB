@@ -61,5 +61,3 @@ export default function App() {
   );
 }
  
-
-Lo pegó aca
