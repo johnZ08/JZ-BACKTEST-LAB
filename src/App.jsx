@@ -63,3 +63,4 @@ className="w-full bg-slate-950 border border-emerald-800/80 rounded px-3 py-2 te
 trades.map((t) => ())
 )}FECHAACTIVOTIPORESULTADORETORNOCONFLUENCIAACCIÓNNo hay registros grabados. Agrega un trade para iniciar.{t.date}{t.pair}{t.direction}{t.outcome}{t.rMultiple > 0 ? +\({t.rMultiple}R : \){t.rMultiple}R}{t.confluence}deleteTrade(t.id)}className="text-rose-500 hover:text-rose-400 text-xs px-2 py-1 rounded"[X]);
 }
+update
