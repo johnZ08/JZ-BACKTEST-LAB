@@ -10,6 +10,10 @@ export default function App() {
   // Estado del filtro de sesión
   const [selectedSession, setSelectedSession] = useState('ALL');
 
+  // Estado del mes activo para el navegador tipo calendario (Format YYYY-MM)
+  const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
+  const [isAllTime, setIsAllTime] = useState(false);
+
   // Estado del formulario
   const [asset, setAsset] = useState('NAS100');
   const [type, setType] = useState('BUY');
@@ -23,15 +27,32 @@ export default function App() {
     localStorage.setItem('jz_backtest_trades', JSON.stringify(trades));
   }, [trades]);
 
+  // Funciones de navegación tipo Calendario
+  const handlePrevMonth = () => {
+    setIsAllTime(false);
+    setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setIsAllTime(false);
+    setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  // Formatear mes visible (Ej. "Septiembre 2026")
+  const currentMonthKey = `${currentMonthDate.getFullYear()}-${String(currentMonthDate.getMonth() + 1).padStart(2, '0')}`;
+  const monthLabel = currentMonthDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+
   // Agregar trade
   const handleAddTrade = (e) => {
     e.preventDefault();
     const parsedRR = parseFloat(rr) || 0;
     const finalReturn = outcome === 'WIN' ? parsedRR : outcome === 'LOSS' ? -1 : 0;
+    const now = new Date();
 
     const newTrade = {
       id: Date.now(),
-      date: new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' }),
+      date: now.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      monthKey: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
       asset,
       type,
       outcome,
@@ -52,27 +73,33 @@ export default function App() {
 
   // Vaciar historial
   const handleClearAll = () => {
-    if (confirm('¿Seguro que deseas borrar todos los registros?')) {
+    if (confirm('¿Seguro que deseas borrar todos los registros de la base de datos?')) {
       setTrades([]);
     }
   };
 
   // -------------------------------------------------------------
-  // FILTRADO DE TRADES SEGÚN LA SESIÓN SELECCIONADA
+  // FILTRADO DUAL: POR MES Y POR SESIÓN
   // -------------------------------------------------------------
-  const filteredTrades = selectedSession === 'ALL' 
-    ? trades 
-    : trades.filter(t => t.session === selectedSession);
+  const filteredTrades = trades.filter(t => {
+    // Si no tiene monthKey (trades viejos), derivarlo de la fecha
+    const tMonthKey = t.monthKey || currentMonthKey;
+    
+    const matchesMonth = isAllTime ? true : tMonthKey === currentMonthKey;
+    const matchesSession = selectedSession === 'ALL' ? true : t.session === selectedSession;
+    
+    return matchesMonth && matchesSession;
+  });
 
   // -------------------------------------------------------------
-  // CÁLCULOS ESTADÍSTICOS & MÉTRICAS (SOBRE FILTRADOS)
+  // CÁLCULOS ESTADÍSTICOS & MÉTRICAS (SOBRE TRADES FILTRADOS)
   // -------------------------------------------------------------
   const totalTrades = filteredTrades.length;
   const wins = filteredTrades.filter(t => t.outcome === 'WIN').length;
   const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : '0.0';
   const totalR = filteredTrades.reduce((acc, t) => acc + t.resultR, 0).toFixed(2);
 
-  // Expectativa Matemática por Trade
+  // Expectativa Matemática
   const expectancy = totalTrades > 0 ? (parseFloat(totalR) / totalTrades).toFixed(2) : '0.00';
 
   // Curva de equidad y Max Drawdown (R)
@@ -130,9 +157,9 @@ export default function App() {
       <header className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-6 border-b border-slate-800 gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-wider text-emerald-400">
-            JZ_BACKTEST_LAB <span className="text-xs text-slate-500 font-mono">v1.3</span>
+            JZ_BACKTEST_LAB <span className="text-xs text-slate-500 font-mono">v1.4</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">Terminal de Pruebas & Análisis Estadístico</p>
+          <p className="text-xs text-slate-400 mt-1">Terminal de Pruebas & Análisis Estadístico Mensual</p>
         </div>
         <div className="flex items-center gap-2 self-start md:self-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -142,31 +169,74 @@ export default function App() {
         </div>
       </header>
 
-      {/* FILTROS POR SESIÓN */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-slate-900/60 border border-slate-800 p-3 rounded-xl">
-        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider pl-1">
-          Filtrar por Sesión:
-        </span>
-        <div className="flex flex-wrap gap-2 font-mono text-xs">
-          {[
-            { id: 'ALL', label: 'Todas las Sesiones' },
-            { id: 'NY', label: 'New York (NY)' },
-            { id: 'LONDON', label: 'Londres' },
-            { id: 'ASIA', label: 'Asia' }
-          ].map((s) => (
+      {/* CONTROLES: NAVEGADOR MENSUAL (TIPO CALENDARIO) Y FILTRO DE SESIONES */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        
+        {/* Navegador de Mes (Flechas tipo Calendario) */}
+        <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+          <button
+            onClick={handlePrevMonth}
+            className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500 hover:text-emerald-400 text-slate-300 font-mono text-lg transition"
+            title="Mes Anterior"
+          >
+            ‹
+          </button>
+
+          <div className="text-center">
+            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block">Periodo Activo</span>
+            <span className="text-sm font-bold font-mono text-emerald-400 capitalize">
+              {isAllTime ? 'Todo el Historial' : monthLabel}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
-              key={s.id}
-              onClick={() => setSelectedSession(s.id)}
-              className={`px-3 py-1.5 rounded-lg font-bold transition border ${
-                selectedSession === s.id
-                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-lg shadow-emerald-950/50'
-                  : 'bg-slate-950/80 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              onClick={() => setIsAllTime(!isAllTime)}
+              className={`px-2.5 py-1 rounded text-xs font-mono border transition ${
+                isAllTime 
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold' 
+                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
               }`}
             >
-              {s.label}
+              Todo
             </button>
-          ))}
+            <button
+              onClick={handleNextMonth}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500 hover:text-emerald-400 text-slate-300 font-mono text-lg transition"
+              title="Mes Siguiente"
+            >
+              ›
+            </button>
+          </div>
         </div>
+
+        {/* Filtro por Sesión */}
+        <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-2">
+          <span className="text-xs font-mono text-slate-400 uppercase tracking-wider pl-1 hidden sm:inline">
+            Sesión:
+          </span>
+          <div className="flex flex-wrap gap-1.5 font-mono text-xs w-full sm:w-auto justify-end">
+            {[
+              { id: 'ALL', label: 'Todas' },
+              { id: 'NY', label: 'NY' },
+              { id: 'LONDON', label: 'Londres' },
+              { id: 'ASIA', label: 'Asia' }
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedSession(s.id)}
+                className={`px-3 py-1.5 rounded-lg font-bold transition border ${
+                  selectedSession === s.id
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
 
       {/* Tarjetas de Métricas */}
@@ -207,14 +277,14 @@ export default function App() {
       <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-xl mb-8">
         <h2 className="text-lg font-bold text-slate-200 mb-4 border-b border-slate-800 pb-2 flex items-center justify-between">
           <span>Curva de Equidad Acumulada (R)</span>
-          <span className="text-xs font-mono font-normal text-slate-400">
-            Filtro: {selectedSession === 'ALL' ? 'Global' : selectedSession}
+          <span className="text-xs font-mono font-normal text-slate-400 capitalize">
+            {isAllTime ? 'Historial Completo' : monthLabel} {selectedSession !== 'ALL' && `(${selectedSession})`}
           </span>
         </h2>
 
         {filteredTrades.length === 0 ? (
           <div className="h-48 flex items-center justify-center text-slate-500 font-mono text-sm border border-dashed border-slate-800 rounded-lg">
-            No hay operaciones registradas para el filtro seleccionado.
+            No hay operaciones registradas para {isAllTime ? 'el periodo activo' : monthLabel}.
           </div>
         ) : (
           <div className="w-full overflow-x-auto">
@@ -361,11 +431,11 @@ export default function App() {
           </form>
         </div>
 
-        {/* Tabla de Historial (Muestra los trades filtrados) */}
+        {/* Tabla de Historial */}
         <div className="lg:col-span-2 bg-slate-900/90 border border-slate-800 p-6 rounded-xl">
           <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-            <h2 className="text-lg font-bold text-slate-200">
-              Historial de Ejecuciones {selectedSession !== 'ALL' && `(${selectedSession})`}
+            <h2 className="text-lg font-bold text-slate-200 capitalize">
+              Historial {isAllTime ? 'Completo' : `de ${monthLabel}`}
             </h2>
             {trades.length > 0 && (
               <button
@@ -379,7 +449,7 @@ export default function App() {
 
           {filteredTrades.length === 0 ? (
             <div className="text-center py-12 text-slate-500 font-mono text-sm">
-              No hay ejecuciones registradas para la sesión activa.
+              No hay ejecuciones registradas en este mes.
             </div>
           ) : (
             <div className="overflow-x-auto">
