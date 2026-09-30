@@ -241,3 +241,4 @@ rows="2"
 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition"Agregar Operación
 PIN 0801{/* Tabla de Historial */}Historial {isAllTime ? 'Completo' : de ${monthLabel}}{trades.length > 0 && (Vaciar Registro 🔒
 )}{filteredTrades.length === 0 ? (No hay ejecuciones de Nasdaq registradas en este periodo.) : ({filteredTrades.map((t, idx) => ())}FechaActivoTipoSesiónResultadoRetorno RAcción#{idx + 1}{t.date}{t.asset}{t.type}{t.session}{t.outcome}0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}}> {t.resultR > 0 ? +${t.resultR}R` : `${t.resultR}R`}handleDeleteTrade(t.id)}className="text-slate-500 hover:text-rose-400 px-2 py-1 transition cursor-pointer"title="Eliminar (Requiere PIN 0801)"✕)});
+}
