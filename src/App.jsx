@@ -3,7 +3,6 @@ Import React, { useState } from 'react';
 export default function App() {
   const [trades, setTrades] = useState([]);
 
-  // Cálculos estadísticos básicos
   const totalTrades = trades.length;
   const wins = trades.filter((t) => t.result === 'WIN').length;
   const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : '0.0';
@@ -13,7 +12,6 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
         
-        {/* Encabezado Terminal */}
         <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-emerald-400">
@@ -29,7 +27,6 @@ export default function App() {
           </div>
         </header>
 
-        {/* Tarjetas de Métricas Estadísticas */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-slate-900/60 p-5 rounded-xl border border-slate-800/80 shadow-lg">
             <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">TOTAL TRADES</span>
@@ -49,7 +46,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* Panel Principal */}
         <main className="bg-slate-900/40 p-6 rounded-xl border border-slate-800/80 text-center py-12">
           <p className="text-slate-400 text-sm">
             Laboratorio listo. Agrega tus ejecuciones para actualizar las métricas en tiempo real.
@@ -60,4 +56,3 @@ export default function App() {
     </div>
   );
 }
- 
