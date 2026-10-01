@@ -16,6 +16,7 @@ const TIMEFRAMES = [
   { sec: 180, label: '3m' },
   { sec: 300, label: '5m' },
   { sec: 900, label: '15m' },
+  { sec: 1800, label: '30m' },
   { sec: 3600, label: '1h' },
   { sec: 14400, label: '4h' }
 ];
@@ -118,6 +119,69 @@ const genSample = () => {
   return out;
 };
 
+// ---- Sesiones (killzones) ----
+// Horas en Nueva York (ET: EST en invierno, EDT en verano). Edita este arreglo para cambiar rangos o colores.
+// Un rango puede cruzar la medianoche (ej. 20:00 a 02:00). 'end' menor que 'start' implica el día siguiente.
+const SESSIONS = [
+  { id: 'asia', label: 'Asia', start: '20:00', end: '00:00', color: '#a855f7' },
+  { id: 'london', label: 'Londres', start: '02:00', end: '05:00', color: '#f59e0b' },
+  { id: 'ny', label: 'NY', start: '09:30', end: '16:00', color: '#3b82f6' }
+];
+const SESSION_ALPHA = 0.12; // opacidad del sombreado (10% a 15%)
+const SERVER_OFFSET_H = 7; // servidor del CSV = hora de Nueva York + 7 h
+const TZ_MODES = [
+  { id: 'server7', label: 'CSV: servidor (NY + 7h)' },
+  { id: 'utc', label: 'CSV: UTC' },
+  { id: 'ny', label: 'CSV: hora de Nueva York' }
+];
+
+const toMin = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+const hexToRgba = (hex, a) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
+
+// Horario de verano de EE.UU.: del 2.º domingo de marzo (02:00 EST) al 1.er domingo de noviembre (02:00 EDT)
+const nthSunday = (year, month, n) => {
+  const first = new Date(Date.UTC(year, month, 1)).getUTCDay();
+  return 1 + ((7 - first) % 7) + (n - 1) * 7;
+};
+const isNyDst = (utcSec) => {
+  const y = new Date(utcSec * 1000).getUTCFullYear();
+  const start = Date.UTC(y, 2, nthSunday(y, 2, 2), 7) / 1000;
+  const end = Date.UTC(y, 10, nthSunday(y, 10, 1), 6) / 1000;
+  return utcSec >= start && utcSec < end;
+};
+
+// Hora del archivo -> "reloj de pared" de Nueva York (en segundos), y a la inversa
+const fileToNy = (t, mode) =>
+  mode === 'ny' ? t : mode === 'server7' ? t - SERVER_OFFSET_H * 3600 : t + (isNyDst(t) ? -4 : -5) * 3600;
+const nyToFile = (w, mode) => {
+  if (mode === 'ny') return w;
+  if (mode === 'server7') return w + SERVER_OFFSET_H * 3600;
+  const est = w + 5 * 3600;
+  return isNyDst(est) ? w + 4 * 3600 : est;
+};
+
+// Todas las franjas de sesión que tocan el rango [tFrom, tTo], expresadas en la hora del archivo
+const sessionIntervals = (tFrom, tTo, mode) => {
+  const out = [];
+  const d0 = Math.floor(fileToNy(tFrom, mode) / 86400) - 1;
+  const d1 = Math.floor(fileToNy(tTo, mode) / 86400) + 1;
+  for (let d = d0; d <= d1; d++) {
+    SESSIONS.forEach((s) => {
+      const a = toMin(s.start);
+      let b = toMin(s.end);
+      if (b <= a) b += 1440;
+      out.push({ s, from: nyToFile(d * 86400 + a * 60, mode), to: nyToFile(d * 86400 + b * 60, mode) });
+    });
+  }
+  return out;
+};
+
 const aggregate = (data, tf) => {
   const off = ALIGN_OFFSET_H * 3600;
   const out = [];
@@ -169,6 +233,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const [dailyLimit, setDailyLimit] = useState('0'); // $ de pérdida diaria máxima (0 = sin límite)
   const [visible, setVisible] = useState(100);
   const [pan, setPan] = useState(0); // velas desplazadas hacia atrás
+  const [showSessions, setShowSessions] = useState(true);
+  const [tzMode, setTzMode] = useState('server7'); // zona horaria de las horas del CSV
   const [editSl, setEditSl] = useState('');
   const [editTp, setEditTp] = useState('');
   const [position, setPosition] = useState(null);
@@ -203,7 +269,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     return pan > 0 ? list.slice(0, Math.max(1, list.length - pan)) : list;
   }, [agg, pos, data, visible, pan]);
 
-  const loadData = (rows, name) => {
+  const loadData = (rows, name, tz = 'server7') => {
     const base = detectBase(rows);
     const ok = TIMEFRAMES.filter((x) => x.sec >= base && x.sec % base === 0);
     if (!ok.length) {
@@ -216,6 +282,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     setTf(ok[0].sec);
     setPos(Math.min(rows.length - 1, 300));
     setPan(0);
+    setTzMode(tz);
     setPosition(null);
     setSessionTrades([]);
     setPlaying(false);
@@ -423,6 +490,39 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const y = (p) => padY + ((hi - p) / (hi - lo)) * (H - padY * 2);
     const cw = (W - padR) / visible;
 
+    if (showSessions) {
+      const vc = visibleCandles;
+      const left = (visible - vc.length) * cw;
+      const plotW = W - padR;
+      // tiempo -> x: posición fraccionaria dentro de la vela (los huecos del fin de semana se colapsan)
+      const timeToX = (T) => {
+        if (T <= vc[0].t) return left;
+        let lo = 0;
+        let hi = vc.length - 1;
+        while (lo < hi) {
+          const mid = (lo + hi + 1) >> 1;
+          if (vc[mid].t <= T) lo = mid;
+          else hi = mid - 1;
+        }
+        return left + (lo + Math.min(1, (T - vc[lo].t) / tf)) * cw;
+      };
+      const tFrom = vc[0].t;
+      const tTo = vc[vc.length - 1].t + tf;
+      sessionIntervals(tFrom, tTo, tzMode).forEach(({ s, from, to }) => {
+        if (to <= tFrom || from >= tTo) return;
+        const x1 = Math.max(left, timeToX(from));
+        const x2 = Math.min(plotW, timeToX(to));
+        if (x2 - x1 < 1) return;
+        ctx.fillStyle = hexToRgba(s.color, SESSION_ALPHA);
+        ctx.fillRect(x1, 0, x2 - x1, H);
+        if (x2 - x1 > 46) {
+          ctx.font = '10px monospace';
+          ctx.fillStyle = hexToRgba(s.color, 0.75);
+          ctx.fillText(s.label, x1 + 4, H - 6);
+        }
+      });
+    }
+
     ctx.font = '11px monospace';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
@@ -475,7 +575,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       ctx.font = '11px monospace';
     }
     hline(visibleCandles[visibleCandles.length - 1].c, '#38bdf8', '');
-  }, [visibleCandles, position, floatPts, floatUSD, visible]);
+  }, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf]);
 
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
@@ -488,7 +588,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
           <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
         </label>
         <button
-          onClick={() => loadData(genSample(), 'datos-simulados (1m)')}
+          onClick={() => loadData(genSample(), 'datos-simulados (1m)', 'ny')}
           className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
         >
           Datos de ejemplo
@@ -563,7 +663,33 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 </button>
               )}
               <span className="text-[10px] font-mono text-slate-500 ml-1">{visible} velas</span>
+              <label className="flex items-center gap-1 text-[10px] font-mono text-slate-400 ml-2 cursor-pointer">
+                <input type="checkbox" checked={showSessions} onChange={(e) => setShowSessions(e.target.checked)} className="accent-emerald-500" />
+                Sesiones
+              </label>
+              <select
+                value={tzMode}
+                onChange={(e) => setTzMode(e.target.value)}
+                title="Zona horaria de las horas del CSV"
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[10px] font-mono text-slate-300"
+              >
+                {TZ_MODES.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.label}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {showSessions && (
+              <div className="flex flex-wrap gap-3 text-[10px] font-mono">
+                {SESSIONS.map((x) => (
+                  <span key={x.id} style={{ color: x.color }}>
+                    ■ {x.label} {x.start}-{x.end} ET
+                  </span>
+                ))}
+              </div>
+            )}
 
             <canvas ref={canvasRef} width={900} height={400} className="w-full h-auto rounded-lg bg-slate-950" />
 
