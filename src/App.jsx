@@ -131,9 +131,10 @@ export default function App() {
 
   const [view, setView] = useState('registro');
 
-  const handleSaveReplayTrades = (list) => {
+  const handleSaveReplayTrades = (list, onDone) => {
     requestAuthorization(() => {
       setTrades(prev => [...prev, ...list]);
+      if (onDone) onDone();
     });
   };
 
