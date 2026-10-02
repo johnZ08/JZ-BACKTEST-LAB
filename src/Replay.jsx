@@ -288,6 +288,54 @@ const drawShape = (ctx, v, d, alpha = 1) => {
   ctx.restore();
 };
 
+const DOW_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// ---- Edición de dibujos: puntos de anclaje, selección y movimiento ----
+const anchorsOf = (v, d) => {
+  const x1 = viewTimeToX(v, d.t1);
+  const y1 = viewPriceToY(v, d.p1);
+  const x2 = viewTimeToX(v, d.t2);
+  const y2 = viewPriceToY(v, d.p2);
+  return d.type === 'rect'
+    ? { a: [x1, y1], b: [x2, y2], c: [x2, y1], d: [x1, y2] }
+    : { a: [x1, y1], b: [x2, y2] };
+};
+const hitHandle = (v, d, x, y) => {
+  const an = anchorsOf(v, d);
+  return Object.keys(an).find((k) => Math.hypot(an[k][0] - x, an[k][1] - y) <= 9) || null;
+};
+const hitBody = (v, d, x, y) => {
+  const { a, b } = anchorsOf(v, d);
+  if (d.type === 'line') {
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len2 = dx * dx + dy * dy;
+    const u = len2 ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len2)) : 0;
+    return Math.hypot(x - (a[0] + u * dx), y - (a[1] + u * dy)) <= 6;
+  }
+  return (
+    x >= Math.min(a[0], b[0]) - 4 && x <= Math.max(a[0], b[0]) + 4 &&
+    y >= Math.min(a[1], b[1]) - 4 && y <= Math.max(a[1], b[1]) + 4
+  );
+};
+// Mover un punto: en rectángulos, 'c' y 'd' son las esquinas que no se guardan directamente
+const applyHandle = (d, handle, t, p) => {
+  const n = { ...d };
+  if (handle === 'a') { n.t1 = t; n.p1 = p; }
+  else if (handle === 'b') { n.t2 = t; n.p2 = p; }
+  else if (handle === 'c') { n.t2 = t; n.p1 = p; }
+  else { n.t1 = t; n.p2 = p; }
+  return n;
+};
+const moveShape = (d, v, orig, dx, dy) => ({
+  ...d,
+  t1: viewXToTime(v, orig.a[0] + dx),
+  p1: viewYToPrice(v, orig.a[1] + dy),
+  t2: viewXToTime(v, orig.b[0] + dx),
+  p2: viewYToPrice(v, orig.b[1] + dy)
+});
+
 // ---- Persistencia: el CSV (grande) va a IndexedDB; lo pequeño a localStorage ----
 const STATE_KEY = 'jz_replay_state_v1';
 const idbOpen = () =>
@@ -359,6 +407,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const [drawings, setDrawings] = useState([]);
   const [ready, setReady] = useState(false); // true cuando terminó de restaurar lo guardado
   const [loading, setLoading] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(true); // panel de órdenes (menú hamburguesa)
+  const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
+  const [selectedId, setSelectedId] = useState(null);
+  const [draggingId, setDraggingId] = useState(null);
   const [tzMode, setTzMode] = useState('server7'); // zona horaria de las horas del CSV
   const [editSl, setEditSl] = useState('');
   const [editTp, setEditTp] = useState('');
@@ -372,6 +424,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const draftRef = useRef(null);
   const hoverRef = useRef(null);
   const lastSaveRef = useRef(0);
+  const drawingsRef = useRef([]);
+  const selectedRef = useRef(null);
+  const dragRef = useRef(null);
+  drawingsRef.current = drawings;
   const stepRef = useRef();
 
   const allowed = useMemo(
@@ -612,7 +668,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const H = cv.height;
     const padR = 84;
     const padY = 16;
-    const padB = 30;
+    const padB = 42;
     const plotW = W - padR;
     const plotH = H - padB;
     ctx.clearRect(0, 0, W, H);
@@ -696,7 +752,9 @@ export default function Replay({ onSave, savedTrades = [] }) {
     });
 
     // 4) Dibujos del usuario
-    drawings.forEach((d) => drawShape(ctx, v, d));
+    drawings.forEach((d) => {
+      if (d.id !== draggingId) drawShape(ctx, v, d);
+    });
 
     // 5) Posición abierta y precio actual
     const hline = (p, color, label) => {
@@ -732,7 +790,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
     ctx.font = 'bold 11px monospace';
     ctx.fillText(lastC.toFixed(2), plotW + 6, y(lastC) + 4);
 
-    // 6) Eje de tiempo en hora de Nueva York
+    // 6) Eje de tiempo: hora y fecha (hora de NY convertida, o la hora tal cual viene en el CSV)
+    const wallOf = (t) => (axisCsv ? t : fileToNy(t, tzMode));
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -742,25 +801,33 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const minPerCandle = tf / 60;
     const interval = [1, 5, 15, 30, 60, 120, 240, 360, 720, 1440].find((m) => (m / minPerCandle) * cw >= 70) || 1440;
     ctx.font = '10px monospace';
-    ctx.fillStyle = '#94a3b8';
     let prevBucket = null;
     let prevDay = null;
+    let dateShown = false;
     vc.forEach((c, i) => {
-      const wall = fileToNy(c.t, tzMode);
+      const wall = wallOf(c.t);
       const bucket = Math.floor(wall / (interval * 60));
       const day = Math.floor(wall / 86400);
       if (prevBucket !== null && (bucket !== prevBucket || day !== prevDay)) {
         const x = left + i * cw;
         const d = new Date(wall * 1000);
-        const label =
-          day !== prevDay
-            ? `${d.getUTCDate()}/${d.getUTCMonth() + 1}`
-            : `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+        const dateStr = `${DOW_ES[d.getUTCDay()]} ${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}`;
+        const showDate = day !== prevDay || !dateShown; // siempre hay una fecha de referencia visible
+        dateShown = true;
         ctx.beginPath();
         ctx.moveTo(x, plotH);
         ctx.lineTo(x, plotH + 4);
         ctx.stroke();
-        ctx.fillText(label, x - 14, plotH + 15);
+        ctx.fillStyle = showDate ? '#e2e8f0' : '#94a3b8';
+        if (interval >= 1440) {
+          ctx.fillText(dateStr, x - 14, plotH + 14);
+        } else {
+          ctx.fillText(`${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`, x - 14, plotH + 13);
+          if (showDate) {
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillText(dateStr, x - 14, plotH + 24);
+          }
+        }
       }
       prevBucket = bucket;
       prevDay = day;
@@ -769,11 +836,11 @@ export default function Replay({ onSave, savedTrades = [] }) {
     marks.forEach(({ s: ses, x }) => {
       ctx.fillStyle = ses.color;
       ctx.fillRect(x - 1, plotH, 2, 8);
-      ctx.fillText(`${ses.label} ${ses.start}`, Math.min(x + 3, plotW - 70), H - 3);
+      ctx.fillText(`${ses.label} ${ses.start}`, Math.min(x + 3, plotW - 70), H - 4);
     });
-  }, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings]);
+  }, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv]);
 
-  // Capa interactiva (cruz del cursor y dibujo en curso): se pinta sin re-renderizar React
+  // Capa interactiva (cruz, dibujo en curso, edición): se pinta sin re-renderizar React
   const drawOverlay = () => {
     const cv = overlayRef.current;
     const v = viewRef.current;
@@ -797,14 +864,46 @@ export default function Replay({ onSave, savedTrades = [] }) {
       ctx.fillRect(v.W - v.padR + 2, h.y - 9, v.padR - 4, 18);
       ctx.fillStyle = '#f1f5f9';
       ctx.fillText(viewYToPrice(v, h.y).toFixed(2), v.W - v.padR + 6, h.y + 4);
-      const d = new Date(fileToNy(viewXToTime(v, h.x), tzMode) * 1000);
-      const label = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+      const tt = viewXToTime(v, h.x);
+      const dd = new Date((axisCsv ? tt : fileToNy(tt, tzMode)) * 1000);
+      const label = `${DOW_ES[dd.getUTCDay()]} ${pad2(dd.getUTCDate())}/${pad2(dd.getUTCMonth() + 1)} ${pad2(dd.getUTCHours())}:${pad2(dd.getUTCMinutes())}`;
+      const lx = Math.max(58, Math.min(v.W - v.padR - 58, h.x));
       ctx.fillStyle = '#334155';
-      ctx.fillRect(h.x - 22, v.H - v.padB + 2, 44, 16);
+      ctx.fillRect(lx - 56, v.H - v.padB + 2, 112, 16);
       ctx.fillStyle = '#f1f5f9';
-      ctx.fillText(label, h.x - 17, v.H - v.padB + 14);
+      ctx.fillText(label, lx - 50, v.H - v.padB + 14);
     }
     if (draftRef.current) drawShape(ctx, v, draftRef.current, 0.9);
+    const g = dragRef.current;
+    if (g) drawShape(ctx, v, g.shape);
+    const sel = g ? g.shape : drawingsRef.current.find((d) => d.id === selectedRef.current);
+    if (sel) {
+      Object.values(anchorsOf(v, sel)).forEach(([x, y]) => {
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(x - 4, y - 4, 8, 8);
+        ctx.strokeRect(x - 4, y - 4, 8, 8);
+      });
+    }
+  };
+
+  // Lista de dibujos con espejo síncrono (ref) para que la capa interactiva nunca lea datos viejos
+  const updateDrawings = (fn) => {
+    const next = fn(drawingsRef.current);
+    drawingsRef.current = next;
+    setDrawings(next);
+  };
+  const select = (id) => {
+    selectedRef.current = id;
+    setSelectedId(id);
+  };
+  const deleteSelected = () => {
+    const id = selectedRef.current;
+    if (!id) return;
+    updateDrawings((prev) => prev.filter((d) => d.id !== id));
+    select(null);
+    drawOverlay();
   };
 
   const eventPoint = (e) => {
@@ -814,14 +913,49 @@ export default function Replay({ onSave, savedTrades = [] }) {
   };
   const onPointerDown = (e) => {
     const v = viewRef.current;
-    if (!v || tool === 'cursor') return;
+    if (!v) return;
+    e.currentTarget.focus();
     const { x, y } = eventPoint(e);
-    if (x > v.W - v.padR || y > v.H - v.padB) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const t = viewXToTime(v, x);
-    const p = viewYToPrice(v, y);
-    draftRef.current = { type: tool, t1: t, p1: p, t2: t, p2: p };
     hoverRef.current = { x, y };
+    if (tool !== 'cursor') {
+      // crear un dibujo nuevo
+      if (x > v.W - v.padR || y > v.H - v.padB) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const t = viewXToTime(v, x);
+      const p = viewYToPrice(v, y);
+      draftRef.current = { type: tool, t1: t, p1: p, t2: t, p2: p };
+    } else {
+      // seleccionar y editar: primero los puntos del dibujo seleccionado, luego el cuerpo (el de arriba gana)
+      const list = drawingsRef.current;
+      const cur = list.find((d) => d.id === selectedRef.current);
+      const handle = cur ? hitHandle(v, cur, x, y) : null;
+      let target = handle ? cur : null;
+      if (!target) {
+        for (let i = list.length - 1; i >= 0; i--) {
+          if (hitBody(v, list[i], x, y)) {
+            target = list[i];
+            break;
+          }
+        }
+      }
+      if (!target) {
+        select(null);
+      } else {
+        select(target.id);
+        setPlaying(false);
+        setDraggingId(target.id);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragRef.current = {
+          id: target.id,
+          kind: handle ? 'handle' : 'move',
+          handle,
+          start: { x, y },
+          orig: anchorsOf(v, target),
+          base: target,
+          shape: target
+        };
+      }
+    }
     drawOverlay();
   };
   const onPointerMove = (e) => {
@@ -829,23 +963,53 @@ export default function Replay({ onSave, savedTrades = [] }) {
     if (!v) return;
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
+    const g = dragRef.current;
     if (draftRef.current) {
       draftRef.current.t2 = viewXToTime(v, x);
       draftRef.current.p2 = viewYToPrice(v, y);
+    } else if (g) {
+      g.shape =
+        g.kind === 'handle'
+          ? applyHandle(g.base, g.handle, viewXToTime(v, x), viewYToPrice(v, y))
+          : moveShape(g.base, v, g.orig, x - g.start.x, y - g.start.y);
+    } else if (tool === 'cursor') {
+      const list = drawingsRef.current;
+      const cur = list.find((d) => d.id === selectedRef.current);
+      overlayRef.current.style.cursor =
+        cur && hitHandle(v, cur, x, y) ? 'pointer' : list.some((d) => hitBody(v, d, x, y)) ? 'move' : 'default';
     }
     drawOverlay();
   };
   const onPointerUp = () => {
     const d = draftRef.current;
+    const g = dragRef.current;
     draftRef.current = null;
+    dragRef.current = null;
     if (d && (d.t1 !== d.t2 || d.p1 !== d.p2)) {
-      setDrawings((prev) => [...prev, { ...d, id: Date.now() + prev.length }]);
+      const nd = { ...d, id: Date.now() };
+      updateDrawings((prev) => [...prev, nd]);
+      select(nd.id);
+      setTool('cursor'); // al terminar un trazo vuelves al cursor para poder editarlo
+    } else if (g) {
+      updateDrawings((prev) => prev.map((x) => (x.id === g.id ? g.shape : x)));
+      setDraggingId(null);
     }
     drawOverlay();
   };
   const onPointerLeave = () => {
     hoverRef.current = null;
     drawOverlay();
+  };
+  const onKeyDown = (e) => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRef.current) {
+      e.preventDefault();
+      deleteSelected();
+    } else if (e.key === 'Escape') {
+      draftRef.current = null;
+      select(null);
+      setTool('cursor');
+      drawOverlay();
+    }
   };
   const count = (type) => drawings.filter((d) => d.type === type).length;
 
@@ -873,7 +1037,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
           tzMode: setTzMode, drawings: setDrawings, sessionTrades: setSessionTrades, position: setPosition,
           visible: setVisible, slPts: setSlPts, tpPts: setTpPts, contracts: setContracts,
           pointValue: setPointValue, commission: setCommission, dailyLimit: setDailyLimit,
-          session: setSession, speed: setSpeed, showSessions: setShowSessions
+          session: setSession, speed: setSpeed, showSessions: setShowSessions,
+          panelOpen: setPanelOpen, axisCsv: setAxisCsv
         };
         Object.entries(setters).forEach(([k, fn]) => {
           if (st[k] !== undefined && st[k] !== null) fn(st[k]);
@@ -902,7 +1067,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
           STATE_KEY,
           JSON.stringify({
             pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts,
-            contracts, pointValue, commission, dailyLimit, session, speed, showSessions
+            contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv
           })
         );
       } catch {
@@ -915,7 +1080,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     }
     const id = setTimeout(write, 300);
     return () => clearTimeout(id);
-  }, [ready, pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts, contracts, pointValue, commission, dailyLimit, session, speed, showSessions]);
+  }, [ready, pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts, contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv]);
 
   const forgetSaved = async () => {
     try {
@@ -1030,9 +1195,23 @@ export default function Replay({ onSave, savedTrades = [] }) {
                   </button>
                 ))}
               </div>
-              <span className="text-xs font-mono text-slate-400">
-                {fmtTime(data[pos].t)} - {data[pos].c.toFixed(2)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-slate-400">
+                  {fmtTime(data[pos].t)} - {data[pos].c.toFixed(2)}
+                </span>
+                <button
+                  onClick={() => setPanelOpen((o) => !o)}
+                  aria-label="Mostrar u ocultar el panel de órdenes"
+                  title={panelOpen ? 'Ocultar panel de órdenes' : 'Mostrar panel de órdenes'}
+                  className={`${btn} text-base leading-none ${
+                    panelOpen
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                      : 'bg-slate-950 text-slate-300 border-slate-800 hover:text-white'
+                  }`}
+                >
+                  ☰
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
@@ -1067,6 +1246,13 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 </button>
               )}
               <span className="text-[10px] font-mono text-slate-500 ml-1">{visible} velas</span>
+              <button
+                onClick={() => setAxisCsv((x) => !x)}
+                title="Hora que muestra el eje inferior"
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                Eje: {axisCsv ? 'hora CSV' : 'hora NY'}
+              </button>
               <label className="flex items-center gap-1 text-[10px] font-mono text-slate-400 ml-2 cursor-pointer">
                 <input type="checkbox" checked={showSessions} onChange={(e) => setShowSessions(e.target.checked)} className="accent-emerald-500" />
                 Sesiones
@@ -1107,7 +1293,18 @@ export default function Replay({ onSave, savedTrades = [] }) {
               ))}
               <span className="mx-1 text-slate-700">|</span>
               <button
-                onClick={() => setDrawings([])}
+                onClick={deleteSelected}
+                disabled={!selectedId}
+                className={`${btn} bg-slate-950 text-rose-400 border-rose-500/30 hover:text-rose-300 disabled:opacity-40`}
+              >
+                Borrar seleccionado
+              </button>
+              <button
+                onClick={() => {
+                  updateDrawings(() => []);
+                  select(null);
+                  drawOverlay();
+                }}
                 disabled={!drawings.length}
                 className={`${btn} bg-slate-950 text-rose-400 border-rose-500/30 hover:text-rose-300 disabled:opacity-40`}
               >
@@ -1120,7 +1317,11 @@ export default function Replay({ onSave, savedTrades = [] }) {
               ].map(([id, label]) => (
                 <button
                   key={id}
-                  onClick={() => setDrawings((prev) => prev.filter((d) => d.type !== id))}
+                  onClick={() => {
+                    updateDrawings((prev) => prev.filter((d) => d.type !== id));
+                    select(null);
+                    drawOverlay();
+                  }}
                   disabled={!count(id)}
                   className={`${btn} bg-slate-950 text-slate-400 border-slate-800 hover:text-white disabled:opacity-40`}
                 >
@@ -1128,6 +1329,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 </button>
               ))}
             </div>
+
+            <p className="text-[10px] font-mono text-slate-500">
+              Con Cursor: clic para seleccionar, arrastra para mover, arrastra los puntos para editar, Supr para borrar.
+            </p>
 
             {showSessions && (
               <div className="flex flex-wrap gap-3 text-[10px] font-mono">
@@ -1145,13 +1350,46 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 ref={overlayRef}
                 width={900}
                 height={400}
-                className="absolute inset-0 w-full h-full"
+                className="absolute inset-0 w-full h-full outline-none"
                 style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: tool === 'cursor' ? 'auto' : 'none' }}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
                 onPointerLeave={onPointerLeave}
+                tabIndex={0}
+                onKeyDown={onKeyDown}
               />
+              {/* Ejecución rápida: funciona aunque el panel de órdenes esté oculto */}
+              <div className="absolute top-2 z-10 flex items-center gap-1" style={{ right: '10.5%' }}>
+                {position ? (
+                  <button
+                    onClick={closeAtMarket}
+                    className={`${btn} bg-slate-800 border-slate-600 font-bold ${floatUSD >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+                  >
+                    Cerrar {floatUSD >= 0 ? '+' : '-'}${Math.abs(floatUSD).toFixed(2)}
+                  </button>
+                ) : (
+                  <>
+                    <span className="hidden md:inline text-[10px] font-mono text-slate-400 mr-1">
+                      {nContracts}x - SL {slPts} - TP {tpPts}
+                    </span>
+                    <button
+                      onClick={() => openPosition('SELL')}
+                      disabled={atEnd || limitHit}
+                      className={`${btn} bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
+                    >
+                      Vender
+                    </button>
+                    <button
+                      onClick={() => openPosition('BUY')}
+                      disabled={atEnd || limitHit}
+                      className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
+                    >
+                      Comprar
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -1208,7 +1446,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
             </div>
           </div>
 
-          {/* OPERATIVA */}
+          {/* OPERATIVA (colapsable con el botón ☰) */}
+          {panelOpen && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
@@ -1304,6 +1543,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             )}
           </div>
+          )}
 
           {/* ESTADÍSTICAS EN VIVO */}
           {stats.n > 0 && (
