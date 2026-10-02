@@ -983,9 +983,28 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
     const g = dragRef.current;
-    if (draftRef.current) {
-      draftRef.current.t2 = viewXToTime(v, x);
-      draftRef.current.p2 = viewYToPrice(v, y);
+     if (draftRef.current) {
+      let t2 = viewXToTime(v, x);
+      let p2 = viewYToPrice(v, y);
+      // FIX ETAPA 1: Shift = snap a múltiplos de 45° (0°, 45°, 90°, ...)
+      if (e.shiftKey) {
+        const d = draftRef.current;
+        const x1 = viewTimeToX(v, d.t1);
+        const y1 = viewPriceToY(v, d.p1);
+        const dx = x - x1;
+        const dy = y - y1;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          const angle = Math.atan2(dy, dx);
+          const snapped = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+          const sx = x1 + Math.cos(snapped) * len;
+          const sy = y1 + Math.sin(snapped) * len;
+          t2 = viewXToTime(v, sx);
+          p2 = viewYToPrice(v, sy);
+        }
+      }
+      draftRef.current.t2 = t2;
+      draftRef.current.p2 = p2
     } else if (g) {
       g.shape =
         g.kind === 'handle'
@@ -1354,6 +1373,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
 
             <p className="text-[10px] font-mono text-slate-500">
               Con Cursor: clic para seleccionar, arrastra para mover, arrastra los puntos para editar, Supr para borrar.
+              Con cualquier herramienta: mantén <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300">Shift</kbd> para ángulo recto (0°/45°/90°).
             </p>
 
             {showSessions && (
@@ -1373,7 +1393,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 width={900}
                 height={400}
                 className="absolute inset-0 w-full h-full outline-none"
-                style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: tool === 'cursor' ? 'auto' : 'none' }}
+                style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: (tool !== 'cursor' || selectedId) ? 'none' : 'auto' }}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
