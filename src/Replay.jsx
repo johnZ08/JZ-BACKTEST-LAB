@@ -1217,7 +1217,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24 md:pb-0">
       {/* CARGA DE DATOS */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center gap-3 text-xs font-mono">
         <label className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
@@ -1433,8 +1433,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             )}
 
-            <div className="relative">
-              <canvas ref={canvasRef} width={900} height={400} className="w-full h-auto rounded-lg bg-slate-950" />
+            <div className="relative aspect-[4/3] md:aspect-[9/4]">
+               <canvas ref={canvasRef} width={900} height={400} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
               <canvas
                 ref={overlayRef}
                 width={900}
@@ -1449,7 +1449,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 onKeyDown={onKeyDown}
               />
               {/* Ejecución rápida: funciona aunque el panel de órdenes esté oculto */}
-              <div className="absolute top-2 z-10 flex items-center gap-1" style={{ right: '10.5%' }}>
+                            <div className="fixed md:absolute bottom-2 md:bottom-auto left-2 right-2 md:left-auto md:right-[10.5%] md:top-2 z-40 md:z-10 flex items-center justify-end gap-1">
                 {position ? (
                   <button
                     onClick={closeAtMarket}
@@ -1537,7 +1537,13 @@ export default function Replay({ onSave, savedTrades = [] }) {
 
           {/* OPERATIVA (colapsable con el botón ☰) */}
           {panelOpen && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <>
+          <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setPanelOpen(false)} />
+          <div className="fixed md:static bottom-0 left-0 right-0 z-50 md:z-auto max-h-[80vh] overflow-y-auto md:max-h-none md:overflow-visible bg-slate-900 border-t md:border border-slate-800 rounded-t-2xl md:rounded-2xl p-4 space-y-3">
+            <div className="flex justify-between items-center md:hidden">
+              <span className="text-xs font-mono text-slate-400">Panel de órdenes</span>
+              <button onClick={() => setPanelOpen(false)} className="text-slate-400 text-lg leading-none cursor-pointer">✕</button>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[10px] text-slate-500 font-mono mb-1">SL (puntos)</label>
@@ -1632,6 +1638,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             )}
           </div>
+          </>
           )}
 
           {/* ESTADÍSTICAS EN VIVO */}
