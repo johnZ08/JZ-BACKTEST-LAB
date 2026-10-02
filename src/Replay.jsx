@@ -413,6 +413,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const [dailyLimit, setDailyLimit] = useState('0'); // $ de pérdida diaria máxima (0 = sin límite)
   const [visible, setVisible] = useState(100);
   const [pan, setPan] = useState(0); // velas desplazadas hacia atrás
+  const [yRange, setYRange] = useState(null); // FIX ETAPA 2: zoom manual del eje Y (null = auto-fit)
   const [showSessions, setShowSessions] = useState(true);
   const [tool, setTool] = useState('cursor'); // cursor | line | rect | fib
   const [drawings, setDrawings] = useState([]);
@@ -438,6 +439,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const drawingsRef = useRef([]);
   const selectedRef = useRef(null);
   const dragRef = useRef(null);
+  const axisDragRef = useRef(null); // FIX ETAPA 2: arrastre sobre los ejes para hacer zoom
   drawingsRef.current = drawings;
   const stepRef = useRef();
 
@@ -481,6 +483,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     setTf(ok[0].sec);
     setPos(Math.min(rows.length - 1, 300));
     setPan(0);
+    setYRange(null); // FIX ETAPA 2: reset del zoom manual en Y al cargar datos nuevos
     setTzMode(tz);
     setPosition(null);
     setSessionTrades([]);
@@ -699,9 +702,15 @@ export default function Replay({ onSave, savedTrades = [] }) {
       lo = mid - minSpan / 2;
       hi = mid + minSpan / 2;
     }
-    const margin = (hi - lo || 1) * 0.06;
-    lo -= margin;
-    hi += margin;
+    // FIX ETAPA 2: si el usuario hizo zoom manual en Y, se respeta ese rango
+    if (yRange) {
+      lo = yRange.lo;
+      hi = yRange.hi;
+    } else {
+      const margin = (hi - lo || 1) * 0.06;
+      lo -= margin;
+      hi += margin;
+    };
     const cw = plotW / visible;
     const left = (visible - vc.length) * cw;
     const v = { lo, hi, left, cw, padY, padB, W, H, padR, candles: vc, tf };
@@ -857,7 +866,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       ctx.fillRect(x - 1, plotH, 2, 8);
       ctx.fillText(`${ses.label} ${ses.start}`, Math.min(x + 3, plotW - 70), H - 4);
     });
-  }, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv]);
+}, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange]);
 
   // Capa interactiva (cruz, dibujo en curso, edición): se pinta sin re-renderizar React
   const drawOverlay = () => {
@@ -936,6 +945,20 @@ export default function Replay({ onSave, savedTrades = [] }) {
     e.currentTarget.focus();
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
+    // FIX ETAPA 2: arrastrar sobre el eje de precio (derecha) o el de tiempo (abajo) hace zoom
+    const onPriceAxis = x > v.W - v.padR;
+    const onTimeAxis = y > v.H - v.padB;
+    if (onPriceAxis || onTimeAxis) {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      axisDragRef.current = {
+        kind: onPriceAxis ? 'y' : 'x',
+        startX: x,
+        startY: y,
+        startVisible: visible,
+        startRange: yRange ?? { lo: v.lo, hi: v.hi }
+      };
+      return;
+    }
     if (tool !== 'cursor') {
       // crear un dibujo nuevo
       if (x > v.W - v.padR || y > v.H - v.padB) return;
@@ -983,7 +1006,23 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
     const g = dragRef.current;
-     if (draftRef.current) {
+    // FIX ETAPA 2: si estás arrastrando un eje, se hace zoom y se omite el resto
+    if (axisDragRef.current) {
+      const a = axisDragRef.current;
+      if (a.kind === 'x') {
+        // Arrastrar a la DERECHA = acercar (menos velas); a la IZQUIERDA = alejar
+        const factor = Math.exp((x - a.startX) / 180);
+        const nv = Math.round(Math.max(20, Math.min(1500, a.startVisible / factor)));
+        if (nv !== visible) setVisible(nv);
+      } else {
+        // Arrastrar hacia ARRIBA = comprimir rango (zoom in Y); hacia ABAJO = ampliar
+        const factor = Math.exp((y - a.startY) / 180);
+        const { lo, hi } = a.startRange;
+        const center = (lo + hi) / 2;
+        const half = ((hi - lo) / 2) * factor;
+        setYRange({ lo: center - half, hi: center + half });
+      }
+    } else if (draftRef.current) {
       let t2 = viewXToTime(v, x);
       let p2 = viewYToPrice(v, y);
       // FIX ETAPA 1: Shift = snap a múltiplos de 45° (0°, 45°, 90°, ...)
@@ -1023,6 +1062,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const g = dragRef.current;
     draftRef.current = null;
     dragRef.current = null;
+    axisDragRef.current = null; // FIX ETAPA 2: fin del arrastre de eje
     if (d && (d.t1 !== d.t2 || d.p1 !== d.p2)) {
       const nd = { ...d, id: Date.now() };
       updateDrawings((prev) => [...prev, nd]);
@@ -1222,9 +1262,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 {allowed.map((x) => (
                   <button
                     key={x.sec}
-                    onClick={() => {
+                   onClick={() => {
                       setTf(x.sec);
                       setPan(0);
+                      setYRange(null);
                     }}
                     className={`${btn} ${
                       tf === x.sec
@@ -1284,6 +1325,11 @@ export default function Replay({ onSave, savedTrades = [] }) {
               {pan > 0 && (
                 <button onClick={() => setPan(0)} className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
                   Ir al presente
+                </button>
+              )}
+              {yRange && (
+                <button onClick={() => setYRange(null)} className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
+                  Resetear zoom Y
                 </button>
               )}
               <span className="text-[10px] font-mono text-slate-500 ml-1">{visible} velas</span>
@@ -1374,6 +1420,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
             <p className="text-[10px] font-mono text-slate-500">
               Con Cursor: clic para seleccionar, arrastra para mover, arrastra los puntos para editar, Supr para borrar.
               Con cualquier herramienta: mantén <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300">Shift</kbd> para ángulo recto (0°/45°/90°).
+              Zoom: arrastra <span className="text-slate-300">horizontal</span> sobre el eje de tiempo (abajo) o <span className="text-slate-300">vertical</span> sobre el eje de precio (derecha).
             </p>
 
             {showSessions && (
