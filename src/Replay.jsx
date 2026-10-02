@@ -65,8 +65,19 @@ const parseCsv = (text) => {
     if ([t, o, h, l, c].every(Number.isFinite)) rows.push({ t, o, h, l, c });
   }
   rows.sort((a, b) => a.t - b.t);
-  if (rows.length < 2) throw new Error('No pude leer velas válidas en el archivo.');
-  return rows;
+  const clean = sanitizeRows(rows);
+  if (clean.length < 2) throw new Error('No pude leer velas válidas en el archivo.');
+  return clean;
+};
+
+// Una sola fila dañada (por ejemplo un mínimo en 0) estira la escala y aplasta todas las demás velas
+const sanitizeRows = (rows) => {
+  const out = [];
+  for (const r of rows) {
+    if (!(r.o > 0 && r.h > 0 && r.l > 0 && r.c > 0)) continue;
+    out.push({ t: r.t, o: r.o, h: Math.max(r.h, r.o, r.c), l: Math.min(r.l, r.o, r.c), c: r.c });
+  }
+  return out;
 };
 
 const detectBase = (rows) => {
@@ -440,9 +451,11 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const visibleCandles = useMemo(() => {
     if (!agg.length) return [];
     const i = findAggIndex(agg, pos);
-    const list = agg.slice(Math.max(0, i - visible - pan + 1), i + 1);
+    const maxPan = Math.max(0, i - Math.floor(visible / 3)); // al desplazarte siempre quedan velas en pantalla
+    const end = Math.max(0, i - Math.min(pan, maxPan));
+    const list = agg.slice(Math.max(0, end - visible + 1), end + 1);
     const cur = list[list.length - 1];
-    if (cur.lastIdx > pos) {
+    if (end === i && cur.lastIdx > pos) {
       // vela en formación: se arma solo con datos ya reproducidos
       let h = -Infinity;
       let l = Infinity;
@@ -452,7 +465,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       }
       list[list.length - 1] = { ...cur, h, l, c: data[pos].c };
     }
-    return pan > 0 ? list.slice(0, Math.max(1, list.length - pan)) : list;
+    return list;
   }, [agg, pos, data, visible, pan]);
 
   const loadData = (rows, name, tz = 'server7') => {
@@ -679,6 +692,12 @@ export default function Replay({ onSave, savedTrades = [] }) {
     if (position) {
       lo = Math.min(lo, position.sl, position.tp);
       hi = Math.max(hi, position.sl, position.tp);
+    }
+    const minSpan = ((hi + lo) / 2) * 0.0015; // ~0,15% del precio (unos 45 puntos en el Nasdaq)
+    if (hi - lo < minSpan) {
+      const mid = (hi + lo) / 2;
+      lo = mid - minSpan / 2;
+      hi = mid + minSpan / 2;
     }
     const margin = (hi - lo || 1) * 0.06;
     lo -= margin;
@@ -1022,7 +1041,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
         const st = JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
         if (cancelled) return;
         if (saved?.buf) {
-          const rows = unpackRows(saved.buf);
+          const rows = sanitizeRows(unpackRows(saved.buf));
           const base = detectBase(rows);
           const ok = TIMEFRAMES.filter((x) => x.sec >= base && x.sec % base === 0);
           if (ok.length) {
@@ -1184,7 +1203,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 {allowed.map((x) => (
                   <button
                     key={x.sec}
-                    onClick={() => setTf(x.sec)}
+                    onClick={() => {
+                      setTf(x.sec);
+                      setPan(0);
+                    }}
                     className={`${btn} ${
                       tf === x.sec
                         ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
@@ -1228,7 +1250,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 Alejar
               </button>
               <button
-                onClick={() => setPan((p) => Math.min(p + Math.ceil(visible / 4), Math.max(0, agg.length - 1)))}
+                onClick={() => setPan((p) => Math.min(p + Math.ceil(visible / 4), Math.max(0, findAggIndex(agg, pos) - Math.floor(visible / 3))))}
                 className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
               >
                 ◀ Atrás
