@@ -1295,7 +1295,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
           <div className="flex-1 bg-black/70" onClick={() => setMobileMenuOpen(false)} />
           <div className="w-[85%] max-w-sm bg-slate-900 border-l border-slate-800 overflow-y-auto p-4 space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-sm font-bold text-white font-mono">Menú</h2>
+              <div>
+                <h2 className="text-sm font-bold text-white font-mono leading-tight">JZ_BACKTEST_LAB</h2>
+                <p className="text-[10px] text-emerald-400 font-mono">NAS100 · UAT</p>
+              </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-slate-400 text-xl leading-none w-8 h-8 flex items-center justify-center cursor-pointer"
@@ -1332,14 +1335,103 @@ export default function Replay({ onSave, savedTrades = [] }) {
               {error && <p className="text-[11px] font-mono text-rose-400">{error}</p>}
             </div>
 
-                        <div className="border-t border-slate-800 pt-3 space-y-2">
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Órdenes</p>
-              <button
-                onClick={() => { setMobileMenuOpen(false); setPanelOpen(true); }}
-                className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer"
-              >
-                Abrir panel de órdenes
-              </button>
+                                    <div className="border-t border-slate-800 pt-3 space-y-3">
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Operativa</p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-mono mb-1">SL (puntos)</label>
+                  <input type="number" min="0" step="any" value={slPts} onChange={(e) => setSlPts(e.target.value)} disabled={!!position} className={fieldClass} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-mono mb-1">TP (puntos)</label>
+                  <input type="number" min="0" step="any" value={tpPts} onChange={(e) => setTpPts(e.target.value)} disabled={!!position} className={fieldClass} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Sesión</label>
+                  <select value={session} onChange={(e) => setSession(e.target.value)} disabled={!!position} className={fieldClass}>
+                    <option value="NY">NY</option>
+                    <option value="LONDON">Londres</option>
+                    <option value="ASIA">Asia</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Contratos</label>
+                  <input type="number" min="1" step="1" value={contracts} onChange={(e) => setContracts(e.target.value)} disabled={!!position} className={fieldClass} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Valor por punto ($)</label>
+                  <input type="number" min="0" step="any" value={pointValue} onChange={(e) => setPointValue(e.target.value)} disabled={!!position} className={fieldClass} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Comisión / contrato ($, ida y vuelta)</label>
+                  <input type="number" min="0" step="any" value={commission} onChange={(e) => setCommission(e.target.value)} disabled={!!position} className={fieldClass} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Límite pérdida diaria ($, 0 = sin límite)</label>
+                  <input type="number" min="0" step="any" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} className={fieldClass} />
+                </div>
+              </div>
+
+              <p className="text-[10px] font-mono text-slate-500">
+                {CONTRACT_SYMBOL} · Riesgo ${riskUSD.toFixed(2)} · Objetivo ${rewardUSD.toFixed(2)} · P&L día {dailyPnL >= 0 ? '+' : '-'}${Math.abs(dailyPnL).toFixed(2)}
+              </p>
+
+              {limitHit && (
+                <p className="text-xs text-rose-400 font-mono">
+                  Límite de pérdida diaria alcanzado.
+                </p>
+              )}
+
+              {position ? (
+                <div className="space-y-2">
+                  <div className="text-xs font-mono bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 space-y-1">
+                    <p className="text-slate-300 font-bold">{position.type} {position.contracts}x {CONTRACT_SYMBOL}</p>
+                    <p className="text-slate-400 text-[10px]">E {position.entry} · SL {position.sl} · TP {position.tp}</p>
+                    <p className={`font-bold ${floatUSD >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {floatPts >= 0 ? '+' : ''}{floatPts.toFixed(2)} pts · {floatUSD >= 0 ? '+' : '-'}${Math.abs(floatUSD).toFixed(2)} · {floatR >= 0 ? '+' : ''}{floatR.toFixed(2)}R
+                    </p>
+                  </div>
+                  <button onClick={closeAtMarket} className={`${btn} w-full bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700`}>
+                    Cerrar a mercado
+                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-slate-500 mb-1 font-mono">Nuevo SL</label>
+                      <input type="number" step="any" value={editSl} onChange={(e) => setEditSl(e.target.value)} className={fieldClass} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-500 mb-1 font-mono">Nuevo TP</label>
+                      <input type="number" step="any" value={editTp} onChange={(e) => setEditTp(e.target.value)} className={fieldClass} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={applyLevels} className={`${btn} flex-1 bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}>
+                      Aplicar
+                    </button>
+                    <button onClick={moveToBreakEven} className={`${btn} flex-1 bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}>
+                      Break-even
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { openPosition('SELL'); setMobileMenuOpen(false); }}
+                    disabled={atEnd || limitHit}
+                    className={`${btn} flex-1 bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
+                  >
+                    Vender
+                  </button>
+                  <button
+                    onClick={() => { openPosition('BUY'); setMobileMenuOpen(false); }}
+                    disabled={atEnd || limitHit}
+                    className={`${btn} flex-1 bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
+                  >
+                    Comprar
+                  </button>
+                </div>
+              )}
             </div>
 
             {stats.n > 0 && (
