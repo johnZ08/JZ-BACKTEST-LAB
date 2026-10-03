@@ -457,9 +457,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
     if (!wrap || !canvas || !overlay) return undefined;
     const update = () => {
       const r = wrap.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(1, Math.round(r.width * dpr));
-      const h = Math.max(1, Math.round(r.height * dpr));
+      const w = Math.max(1, Math.round(r.width));
+      const h = Math.max(1, Math.round(r.height));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
@@ -731,10 +730,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const cv = canvasRef.current;
     if (!cv || visibleCandles.length === 0) return;
     const ctx = cv.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const W = cv.width / dpr;
-    const H = cv.height / dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = cv.width;
+    const H = cv.height;
     const padR = 84;
     const padY = 16;
     const padB = 42;
@@ -960,9 +957,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const v = viewRef.current;
     if (!cv || !v) return;
     const ctx = cv.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
+    ctx.clearRect(0, 0, cv.width, cv.height);
     const h = hoverRef.current;
     if (h && h.x <= v.W - v.padR && h.y <= v.H - v.padB) {
       ctx.strokeStyle = 'rgba(148,163,184,0.45)';
@@ -1022,11 +1017,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
     drawOverlay();
   };
 
-  const eventPoint = (e) => {
+     const eventPoint = (e) => {
     const cv = overlayRef.current;
     const r = cv.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    return { x: ((e.clientX - r.left) * (cv.width / dpr)) / r.width, y: ((e.clientY - r.top) * (cv.height / dpr)) / r.height };
+    return { x: ((e.clientX - r.left) * cv.width) / r.width, y: ((e.clientY - r.top) * cv.height) / r.height };
   };
    const onPointerDown = (e) => {
     const v = viewRef.current;
