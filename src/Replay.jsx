@@ -421,7 +421,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const [loading, setLoading] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [panLock, setPanLock] = useState(false);// panel de órdenes (menú hamburguesa)
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
   const [selectedId, setSelectedId] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
@@ -441,7 +442,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const drawingsRef = useRef([]);
   const selectedRef = useRef(null);
   const dragRef = useRef(null);
-  const axisDragRef = useRef(null); // FIX ETAPA 2: arrastre sobre los ejes para hacer zoom
+  const axisDragRef = useRef(null);
+  const freePanRef = useRef(null); // FIX ETAPA 2: arrastre sobre los ejes para hacer zoom
   drawingsRef.current = drawings;
   const stepRef = useRef();
 
@@ -961,6 +963,26 @@ export default function Replay({ onSave, savedTrades = [] }) {
       };
       return;
     }
+        // FIX 5.2: paneo libre arrastrando el canvas (si el candado está abierto)
+    if (tool === 'cursor' && !panLock && x <= v.W - v.padR && y <= v.H - v.padB) {
+      // si hay un dibujo debajo del cursor, se prioriza el dibujo
+      const list = drawingsRef.current;
+      const cur = list.find((d) => d.id === selectedRef.current);
+      const overDrawing =
+        (cur && hitHandle(v, cur, x, y)) ||
+        list.some((d) => hitBody(v, d, x, y));
+      if (!overDrawing) {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        freePanRef.current = {
+          startX: x,
+          startY: y,
+          startPan: pan,
+          startYRange: yRange ?? { lo: v.lo, hi: v.hi },
+          cw: v.cw
+        };
+        return;
+      }
+    }
     if (tool !== 'cursor') {
       // crear un dibujo nuevo
       if (x > v.W - v.padR || y > v.H - v.padB) return;
@@ -1009,16 +1031,31 @@ export default function Replay({ onSave, savedTrades = [] }) {
     hoverRef.current = { x, y };
     const g = dragRef.current;
     // FIX ETAPA 2: si estás arrastrando un eje, se hace zoom y se omite el resto
+       if (freePanRef.current) {
+      const a = freePanRef.current;
+      const dx = x - a.startX;
+      const dy = y - a.startY;
+      // Paneo horizontal: 1px de dedo = 1px de gráfico (nada de "a punticos")
+      const candleShift = Math.round(dx / a.cw);
+      if (candleShift !== 0) setPan(Math.max(0, a.startPan + candleShift));
+      // Paneo vertical: mueve el rango de precio junto con el dedo
+      const pricePerPx = (a.startYRange.hi - a.startYRange.lo) / (v.H - v.padY - v.padB);
+      const shift = dy * pricePerPx;
+      setYRange({ lo: a.startYRange.lo + shift, hi: a.startYRange.hi + shift });
+      return;
+    }
+    if (axisDragRef.current) {
+      const a = axisDragRef.current;
     if (axisDragRef.current) {
       const a = axisDragRef.current;
       if (a.kind === 'x') {
         // Arrastrar a la DERECHA = acercar (menos velas); a la IZQUIERDA = alejar
-        const factor = Math.exp((x - a.startX) / 180);
+        const factor = Math.exp((x - a.startX) / 70);
         const nv = Math.round(Math.max(20, Math.min(1500, a.startVisible / factor)));
         if (nv !== visible) setVisible(nv);
       } else {
         // Arrastrar hacia ARRIBA = comprimir rango (zoom in Y); hacia ABAJO = ampliar
-        const factor = Math.exp((y - a.startY) / 180);
+        const factor = Math.exp((y - a.startY) / 60);
         const { lo, hi } = a.startRange;
         const center = (lo + hi) / 2;
         const half = ((hi - lo) / 2) * factor;
@@ -1065,6 +1102,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     draftRef.current = null;
     dragRef.current = null;
     axisDragRef.current = null; // FIX ETAPA 2: fin del arrastre de eje
+    freePanRef.current = null; // FIX 5.2: fin del paneo libre
     if (d && (d.t1 !== d.t2 || d.p1 !== d.p2)) {
       const nd = { ...d, id: Date.now() };
       updateDrawings((prev) => [...prev, nd]);
@@ -1219,8 +1257,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
   return (
-    <div className="space-y-4 pb-24 md:pb-0">
-     
+      <div className="h-[100dvh] md:h-auto overflow-hidden md:overflow-visible flex flex-col md:block md:space-y-4">     
 
       {/* MÓVIL: MENÚ HAMBURGUESA */}
       {mobileMenuOpen && (
@@ -1228,7 +1265,10 @@ export default function Replay({ onSave, savedTrades = [] }) {
           <div className="flex-1 bg-black/70" onClick={() => setMobileMenuOpen(false)} />
           <div className="w-[85%] max-w-sm bg-slate-900 border-l border-slate-800 overflow-y-auto p-4 space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-sm font-bold text-white font-mono">Menú</h2>
+              <div>
+                <h2 className="text-sm font-bold text-white font-mono leading-tight">JZ_BACKTEST_LAB</h2>
+                <p className="text-[10px] text-emerald-400 font-mono">NAS100 · UAT</p>
+              </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-slate-400 text-xl leading-none w-8 h-8 flex items-center justify-center cursor-pointer"
@@ -1271,8 +1311,11 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 onClick={() => { setMobileMenuOpen(false); setPanelOpen(true); }}
                 className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer"
               >
-                Abrir panel de órdenes
+                Configurar operativa →
               </button>
+              <p className="text-[10px] text-slate-500 font-mono">
+                Contratos, comisión, SL/TP, sesión, límite de pérdida diaria.
+              </p>
             </div>
 
             {stats.n > 0 && (
@@ -1378,7 +1421,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       ) : (
         <>
           {/* GRÁFICO */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2 md:p-4 space-y-2 md:space-y-3">
+          <div className="flex-1 min-h-0 flex flex-col bg-slate-900 border border-slate-800 md:rounded-2xl p-0 md:p-4 gap-0 md:gap-3">
             <div className="hidden md:flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-1.5">
                 {allowed.map((x) => (
@@ -1584,6 +1627,17 @@ export default function Replay({ onSave, savedTrades = [] }) {
                   ))}
                 </div>
               </div>
+                            <button
+                onClick={() => setPanLock((l) => !l)}
+                aria-label={panLock ? 'Desbloquear paneo' : 'Bloquear paneo'}
+                className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border text-base leading-none cursor-pointer ${
+                  panLock
+                    ? 'bg-rose-500 text-slate-950 border-rose-400'
+                    : 'bg-slate-950 text-slate-300 border-slate-800'
+                }`}
+              >
+                {panLock ? '🔒' : '🔓'}
+              </button>
               <button
                 onClick={() => setMobileToolsOpen((o) => !o)}
                 aria-label="Herramientas de dibujo"
@@ -1635,7 +1689,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             )}
 
-            <div className="relative h-[55vh] min-h-[300px] md:h-auto md:aspect-[9/4]">
+            <div className="relative flex-1 min-h-0 md:flex-none md:aspect-[9/4]">
                <canvas ref={canvasRef} width={900} height={400} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
               <canvas
                 ref={overlayRef}
@@ -1718,7 +1772,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </select>
             </div>
 
-            <div>
+            <div className="hidden md:block">
               <input
                 type="range"
                 min={0}
@@ -1731,7 +1785,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 }}
                 className="w-full accent-emerald-500 disabled:opacity-40"
               />
-              <p className="text-[10px] font-mono text-slate-500">
+              <p className="hidden md:block text-[10px] font-mono text-slate-500">
                 {position ? 'Cierra la operación para mover el punto de inicio.' : 'Arrastra para elegir desde dónde empezar.'}
               </p>
             </div>
