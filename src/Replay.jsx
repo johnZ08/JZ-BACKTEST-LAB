@@ -1219,89 +1219,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
   return (
-    <div className="space-y-4 pt-12 pb-24 md:pt-0 md:pb-0">
-      {/* MÓVIL: BARRA SUPERIOR */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-2 py-1.5 flex items-center gap-2">
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Abrir menú"
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-base leading-none cursor-pointer"
-        >
-          ☰
-        </button>
-        <div className="flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex gap-1">
-            {data.length > 0 && allowed.map((x) => (
-              <button
-                key={x.sec}
-                onClick={() => {
-                  setTf(x.sec);
-                  setPan(0);
-                  setYRange(null);
-                }}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
-                  tf === x.sec
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
-                    : 'bg-slate-950 text-slate-400 border-slate-800'
-                }`}
-              >
-                {x.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <button
-          onClick={() => setMobileToolsOpen((o) => !o)}
-          aria-label="Herramientas de dibujo"
-          className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border text-base leading-none cursor-pointer ${
-            mobileToolsOpen
-              ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-              : 'bg-slate-950 text-slate-300 border-slate-800'
-          }`}
-        >
-          ✏️
-        </button>
-      </div>
-
-      {/* MÓVIL: FRANJA DE HERRAMIENTAS */}
-      {mobileToolsOpen && data.length > 0 && (
-        <div className="md:hidden fixed top-[44px] left-0 right-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-2 py-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex gap-1">
-            {[
-              ['cursor', 'Cursor'],
-              ['line', 'Línea'],
-              ['rect', 'Rect'],
-              ['fib', 'Fib']
-            ].map(([id, label]) => (
-              <button
-                key={id}
-                onClick={() => setTool(id)}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
-                  tool === id
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
-                    : 'bg-slate-950 text-slate-400 border-slate-800'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-            <button
-              onClick={deleteSelected}
-              disabled={!selectedId}
-              className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
-            >
-              Borrar
-            </button>
-            <button
-              onClick={() => { updateDrawings(() => []); select(null); drawOverlay(); }}
-              disabled={!drawings.length}
-              className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
-            >
-              Borrar todo ({drawings.length})
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="space-y-4 pb-24 md:pb-0">
+     
 
       {/* MÓVIL: MENÚ HAMBURGUESA */}
       {mobileMenuOpen && (
@@ -1633,6 +1552,86 @@ export default function Replay({ onSave, savedTrades = [] }) {
                     ■ {x.label} {x.start}-{x.end} ET
                   </span>
                 ))}
+              </div>
+            )}
+            {/* MÓVIL: BARRA COMPACTA PEGADA AL GRÁFICO */}
+            <div className="md:hidden flex items-center gap-2">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Abrir menú"
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-base leading-none cursor-pointer"
+              >
+                ☰
+              </button>
+              <div className="flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex gap-1">
+                  {data.length > 0 && allowed.map((x) => (
+                    <button
+                      key={x.sec}
+                      onClick={() => {
+                        setTf(x.sec);
+                        setPan(0);
+                        setYRange(null);
+                      }}
+                      className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                        tf === x.sec
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                          : 'bg-slate-950 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      {x.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileToolsOpen((o) => !o)}
+                aria-label="Herramientas de dibujo"
+                className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border text-base leading-none cursor-pointer ${
+                  mobileToolsOpen
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                    : 'bg-slate-950 text-slate-300 border-slate-800'
+                }`}
+              >
+                ✏️
+              </button>
+            </div>
+
+            {/* MÓVIL: FRANJA HERRAMIENTAS PEGADA AL GRÁFICO */}
+            {mobileToolsOpen && data.length > 0 && (
+              <div className="md:hidden flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {[
+                  ['cursor', 'Cursor'],
+                  ['line', 'Línea'],
+                  ['rect', 'Rect'],
+                  ['fib', 'Fib']
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setTool(id)}
+                    className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                      tool === id
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                        : 'bg-slate-950 text-slate-400 border-slate-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={deleteSelected}
+                  disabled={!selectedId}
+                  className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
+                >
+                  Borrar
+                </button>
+                <button
+                  onClick={() => { updateDrawings(() => []); select(null); drawOverlay(); }}
+                  disabled={!drawings.length}
+                  className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
+                >
+                  Borrar todo ({drawings.length})
+                </button>
               </div>
             )}
 
