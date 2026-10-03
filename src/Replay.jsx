@@ -396,7 +396,7 @@ const btn = 'px-3 py-1.5 rounded-lg border text-xs font-mono transition cursor-p
 const fieldClass =
   'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition';
 
-export default function Replay({ onSave, savedTrades = [], active = true }) {
+export default function Replay({ onSave, savedTrades = [], active = true, onGoToRegistro }) {
   const [data, setData] = useState([]);
   const [fileName, setFileName] = useState('');
   const [baseSec, setBaseSec] = useState(60);
@@ -1361,6 +1361,15 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
               <div>
                 <h2 className="text-sm font-bold text-white font-mono leading-tight">JZ_BACKTEST_LAB</h2>
                 <p className="text-[10px] text-emerald-400 font-mono">NAS100 · UAT</p>
+              </div>
+                            <div className="flex gap-1.5">
+                <button
+                  onClick={() => { setMobileMenuOpen(false); if (onGoToRegistro) onGoToRegistro(); }}
+                  className="text-[11px] font-mono text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-lg px-2 py-1 cursor-pointer"
+                  title="Ir a la pestaña Registro"
+                >
+                  ← Registro
+                </button>
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
