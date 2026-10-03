@@ -396,7 +396,7 @@ const btn = 'px-3 py-1.5 rounded-lg border text-xs font-mono transition cursor-p
 const fieldClass =
   'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition';
 
-export default function Replay({ onSave, savedTrades = [] }) {
+export default function Replay({ onSave, savedTrades = [], active = true }) {
   const [data, setData] = useState([]);
   const [fileName, setFileName] = useState('');
   const [baseSec, setBaseSec] = useState(60);
@@ -477,6 +477,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     };
   }, []);
   useEffect(() => {
+    if (!active) return undefined;
     if (typeof window === 'undefined') return undefined;
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     if (!isMobile) return undefined;
@@ -490,7 +491,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       document.body.style.position = prevPosition;
       document.body.style.width = '';
     };
-  }, []);
+  }, [active]);
 
   const allowed = useMemo(
     () => TIMEFRAMES.filter((x) => x.sec >= baseSec && x.sec % baseSec === 0),
