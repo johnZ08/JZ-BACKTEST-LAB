@@ -396,7 +396,7 @@ const btn = 'px-3 py-1.5 rounded-lg border text-xs font-mono transition cursor-p
 const fieldClass =
   'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition';
 
-export default function Replay({ onSave, savedTrades = [], active = true }) {
+export default function Replay({ onSave, savedTrades = [] }) {
   const [data, setData] = useState([]);
   const [fileName, setFileName] = useState('');
   const [baseSec, setBaseSec] = useState(60);
@@ -413,7 +413,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
   const [dailyLimit, setDailyLimit] = useState('0'); // $ de pérdida diaria máxima (0 = sin límite)
   const [visible, setVisible] = useState(100);
   const [pan, setPan] = useState(0); // velas desplazadas hacia atrás
-  const [yRange, setYRange] = useState(null); // zoom manual del eje Y (null = auto-fit)
+  const [yRange, setYRange] = useState(null); // FIX ETAPA 2: zoom manual del eje Y (null = auto-fit)
   const [showSessions, setShowSessions] = useState(true);
   const [tool, setTool] = useState('cursor'); // cursor | line | rect | fib
   const [drawings, setDrawings] = useState([]);
@@ -421,7 +421,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
   const [loading, setLoading] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [panLock, setPanLock] = useState(false);
   const [sizeTick, setSizeTick] = useState(0);
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
@@ -444,13 +444,12 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
   const drawingsRef = useRef([]);
   const selectedRef = useRef(null);
   const dragRef = useRef(null);
-  const axisDragRef = useRef(null); // arrastre sobre los ejes para hacer zoom
+  const axisDragRef = useRef(null); // FIX ETAPA 2: arrastre sobre los ejes para hacer zoom
   const freePanRef = useRef(null);
   drawingsRef.current = drawings;
   const stepRef = useRef();
-
-  // FIX: canvas responsive con DPR — el bitmap coincide con el tamaño real del contenedor × DPR
-  // Esto da nitidez en pantallas retina SIN cambiar el layout visual
+    // FIX: bloquea el scroll de la página en móvil mientras Replay está montado
+    // FIX: canvas responsive — el bitmap coincide con el tamaño real del contenedor (evita deformación)
   useEffect(() => {
     const wrap = chartWrapRef.current;
     const canvas = canvasRef.current;
@@ -458,9 +457,8 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     if (!wrap || !canvas || !overlay) return undefined;
     const update = () => {
       const r = wrap.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(1, Math.round(r.width * dpr));
-      const h = Math.max(1, Math.round(r.height * dpr));
+      const w = Math.max(1, Math.round(r.width));
+      const h = Math.max(1, Math.round(r.height));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
@@ -478,26 +476,21 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       window.removeEventListener('resize', update);
     };
   }, []);
-
-  // FIX: bloquea el scroll de la página en móvil SOLO cuando Replay está visible.
-  // Al cambiar a Registro, se restaura el scroll automáticamente.
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    if (!active) return undefined;
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     if (!isMobile) return undefined;
     const prevOverflow = document.body.style.overflow;
     const prevPosition = document.body.style.position;
-    const prevWidth = document.body.style.width;
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
     return () => {
       document.body.style.overflow = prevOverflow;
       document.body.style.position = prevPosition;
-      document.body.style.width = prevWidth;
+      document.body.style.width = '';
     };
-  }, [active]);
+  }, []);
 
   const allowed = useMemo(
     () => TIMEFRAMES.filter((x) => x.sec >= baseSec && x.sec % baseSec === 0),
@@ -509,11 +502,13 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
   const visibleCandles = useMemo(() => {
     if (!agg.length) return [];
     const i = findAggIndex(agg, pos);
+    // FIX PANEO: deja retroceder casi hasta el inicio del histórico (solo visible velas mínimas en pantalla)
     const maxPan = Math.max(0, i - Math.floor(visible * 0.5));
     const end = Math.max(0, i - Math.min(pan, maxPan));
     const list = agg.slice(Math.max(0, end - visible + 1), end + 1);
     const cur = list[list.length - 1];
     if (end === i && cur.lastIdx > pos) {
+      // vela en formación: se arma solo con datos ya reproducidos
       let h = -Infinity;
       let l = Infinity;
       for (let k = cur.firstIdx; k <= pos; k++) {
@@ -538,7 +533,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     setTf(ok[0].sec);
     setPos(Math.min(rows.length - 1, 300));
     setPan(0);
-    setYRange(null);
+    setYRange(null); // FIX ETAPA 2: reset del zoom manual en Y al cargar datos nuevos
     setTzMode(tz);
     setPosition(null);
     setSessionTrades([]);
@@ -555,7 +550,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     e.target.value = '';
     if (!file) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 30));
+    await new Promise((r) => setTimeout(r, 30)); // deja pintar el aviso antes de procesar
     try {
       loadData(parseCsv(await file.text()), file.name);
     } catch (err) {
@@ -566,7 +561,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
 
   const closePosition = (outcome, r, exitIdx) => {
     const p = position;
-    const risk = p.risk;
+    const risk = p.risk; // riesgo inicial en puntos (no cambia aunque muevas el SL)
     const rr = round2(p.rr0);
     const day = new Date(p.openTime * 1000).toISOString().slice(0, 10);
     const [y, m, d] = day.split('-');
@@ -596,6 +591,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     setPosition(null);
   };
 
+  // Se reasigna en cada render para que el intervalo siempre use el estado actual
   stepRef.current = (n) => {
     if (!data.length || pos >= data.length - 1) {
       setPlaying(false);
@@ -609,6 +605,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
         const slHit = position.type === 'BUY' ? c.l <= position.sl : c.h >= position.sl;
         const tpHit = position.type === 'BUY' ? c.h >= position.tp : c.l <= position.tp;
         if (slHit || tpHit) {
+          // si ambos caen en la misma vela se asume SL primero (criterio conservador)
           const dir = position.type === 'BUY' ? 1 : -1;
           const exit = slHit ? position.sl : position.tp;
           const r = (dir * (exit - position.entry)) / position.risk;
@@ -629,6 +626,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     return () => clearInterval(id);
   }, [playing, speed]);
 
+  // al abrir una operación, los campos de "Nuevo SL/TP" arrancan con sus niveles
   useEffect(() => {
     if (position) {
       setEditSl(String(position.sl));
@@ -724,7 +722,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
   };
 
   const handleSave = () => {
-    onSave(sessionTrades, () => setSessionTrades([]));
+    onSave(sessionTrades, () => setSessionTrades([])); // se vacía solo si autorizas con el PIN
   };
 
   // Capa estática del gráfico: sesiones, ejes, velas, dibujos y posición
@@ -732,11 +730,8 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     const cv = canvasRef.current;
     if (!cv || visibleCandles.length === 0) return;
     const ctx = cv.getContext('2d');
-    // FIX DPR: todas las coordenadas se trabajan en CSS px; el bitmap tiene ×dpr píxeles reales
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const W = cv.width / dpr;
-    const H = cv.height / dpr;
+    const W = cv.width;
+    const H = cv.height;
     const padR = 84;
     const padY = 16;
     const padB = 42;
@@ -751,12 +746,13 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       lo = Math.min(lo, position.sl, position.tp);
       hi = Math.max(hi, position.sl, position.tp);
     }
-    const minSpan = ((hi + lo) / 2) * 0.0015;
+    const minSpan = ((hi + lo) / 2) * 0.0015; // ~0,15% del precio (unos 45 puntos en el Nasdaq)
     if (hi - lo < minSpan) {
       const mid = (hi + lo) / 2;
       lo = mid - minSpan / 2;
       hi = mid + minSpan / 2;
     }
+    // FIX ETAPA 2: si el usuario hizo zoom manual en Y, se respeta ese rango
     if (yRange) {
       lo = yRange.lo;
       hi = yRange.hi;
@@ -764,14 +760,14 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       const margin = (hi - lo || 1) * 0.06;
       lo -= margin;
       hi += margin;
-    }
+    };
     const cw = plotW / visible;
     const left = (visible - vc.length) * cw;
     const v = { lo, hi, left, cw, padY, padB, W, H, padR, candles: vc, tf };
     viewRef.current = v;
     const y = (p) => viewPriceToY(v, p);
 
-    // 1) Sesiones: sombreado + líneas de high/low + apertura de NY
+              // 1) Sesiones: sombreado + líneas de high/low + apertura de NY
     const marks = [];
     if (showSessions) {
       const tFrom = vc[0].t;
@@ -782,6 +778,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
         const x2 = Math.min(plotW, viewTimeToX(v, to));
         if (x2 - x1 < 1) return;
 
+        // Rango high/low de las velas dentro de la sesión
         let sLo = Infinity;
         let sHi = -Infinity;
         for (const c of vc) {
@@ -794,13 +791,15 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
         if (sLo !== Infinity && sHi !== -Infinity) {
           const yHi = y(sHi);
           const yLo = y(sLo);
-          const vPad = 8;
+          const vPad = 8; // margen vertical para que el rectángulo respire
           const top = Math.max(0, yHi - vPad);
           const bot = Math.min(plotH, yLo + vPad);
 
+          // Sombreado del rango
           ctx.fillStyle = hexToRgba(ses.color, SESSION_ALPHA);
           ctx.fillRect(x1, top, x2 - x1, bot - top);
 
+          // FIX: líneas de high y low que solo abarcan el ancho de la sesión
           ctx.strokeStyle = hexToRgba(ses.color, 0.85);
           ctx.lineWidth = 1.5;
           ctx.beginPath();
@@ -810,6 +809,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
           ctx.lineTo(x2, yLo);
           ctx.stroke();
 
+          // Etiqueta de la sesión arriba del rango, si hay espacio
           if (x2 - x1 > 46) {
             ctx.font = '10px monospace';
             ctx.fillStyle = hexToRgba(ses.color, 0.9);
@@ -901,7 +901,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     ctx.font = 'bold 11px monospace';
     ctx.fillText(lastC.toFixed(2), plotW + 6, y(lastC) + 4);
 
-    // 6) Eje de tiempo: hora y fecha
+    // 6) Eje de tiempo: hora y fecha (hora de NY convertida, o la hora tal cual viene en el CSV)
     const wallOf = (t) => (axisCsv ? t : fileToNy(t, tzMode));
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 1;
@@ -923,7 +923,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
         const x = left + i * cw;
         const d = new Date(wall * 1000);
         const dateStr = `${DOW_ES[d.getUTCDay()]} ${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}`;
-        const showDate = day !== prevDay || !dateShown;
+        const showDate = day !== prevDay || !dateShown; // siempre hay una fecha de referencia visible
         dateShown = true;
         ctx.beginPath();
         ctx.moveTo(x, plotH);
@@ -949,7 +949,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       ctx.fillRect(x - 1, plotH, 2, 8);
       ctx.fillText(`${ses.label} ${ses.start}`, Math.min(x + 3, plotW - 70), H - 4);
     });
-  }, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange, sizeTick]);
+}, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange, sizeTick]);
 
   // Capa interactiva (cruz, dibujo en curso, edición): se pinta sin re-renderizar React
   const drawOverlay = () => {
@@ -957,10 +957,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     const v = viewRef.current;
     if (!cv || !v) return;
     const ctx = cv.getContext('2d');
-    // FIX DPR: misma escala que el canvas principal
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
+    ctx.clearRect(0, 0, cv.width, cv.height);
     const h = hoverRef.current;
     if (h && h.x <= v.W - v.padR && h.y <= v.H - v.padB) {
       ctx.strokeStyle = 'rgba(148,163,184,0.45)';
@@ -1002,6 +999,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     }
   };
 
+  // Lista de dibujos con espejo síncrono (ref) para que la capa interactiva nunca lea datos viejos
   const updateDrawings = (fn) => {
     const next = fn(drawingsRef.current);
     drawingsRef.current = next;
@@ -1019,19 +1017,18 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     drawOverlay();
   };
 
-  // FIX DPR: ahora todo se trabaja en CSS px (el transform del ctx escala al bitmap real)
-  const eventPoint = (e) => {
+     const eventPoint = (e) => {
     const cv = overlayRef.current;
     const r = cv.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    return { x: ((e.clientX - r.left) * cv.width) / r.width, y: ((e.clientY - r.top) * cv.height) / r.height };
   };
-
-  const onPointerDown = (e) => {
+   const onPointerDown = (e) => {
     const v = viewRef.current;
     if (!v) return;
     e.currentTarget.focus();
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
+    // FIX ETAPA 2: arrastrar sobre el eje de precio (derecha) o el de tiempo (abajo) hace zoom
     const onPriceAxis = x > v.W - v.padR;
     const onTimeAxis = y > v.H - v.padB;
     if (onPriceAxis || onTimeAxis) {
@@ -1045,6 +1042,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       };
       return;
     }
+    // FIX PANEO LIBRE: arrastrar dentro del canvas mueve las velas (si el candado está abierto)
     if (tool === 'cursor' && !panLock && x <= v.W - v.padR && y <= v.H - v.padB) {
       const list = drawingsRef.current;
       const cur = list.find((d) => d.id === selectedRef.current);
@@ -1064,12 +1062,14 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       }
     }
     if (tool !== 'cursor') {
+      // crear un dibujo nuevo
       if (x > v.W - v.padR || y > v.H - v.padB) return;
       e.currentTarget.setPointerCapture(e.pointerId);
       const t = viewXToTime(v, x);
       const p = viewYToPrice(v, y);
       draftRef.current = { type: tool, t1: t, p1: p, t2: t, p2: p };
     } else {
+      // seleccionar y editar: primero los puntos del dibujo seleccionado, luego el cuerpo (el de arriba gana)
       const list = drawingsRef.current;
       const cur = list.find((d) => d.id === selectedRef.current);
       const handle = cur ? hitHandle(v, cur, x, y) : null;
@@ -1102,14 +1102,14 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     }
     drawOverlay();
   };
-
-  const onPointerMove = (e) => {
+    const onPointerMove = (e) => {
     const v = viewRef.current;
     if (!v) return;
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
     const g = dragRef.current;
 
+    // FIX PANEO LIBRE: si estás arrastrando el canvas, mueve las velas
     if (freePanRef.current) {
       const a = freePanRef.current;
       const dx = x - a.startX;
@@ -1122,6 +1122,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       return;
     }
 
+    // FIX ETAPA 2: si estás arrastrando un eje, se hace zoom y se omite el resto
     if (axisDragRef.current) {
       const a = axisDragRef.current;
       if (a.kind === 'x') {
@@ -1153,6 +1154,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     if (draftRef.current) {
       let t2 = viewXToTime(v, x);
       let p2 = viewYToPrice(v, y);
+      // FIX ETAPA 1: Shift = snap a múltiplos de 45° (0°, 45°, 90°, ...)
       if (e.shiftKey) {
         const d = draftRef.current;
         const x1 = viewTimeToX(v, d.t1);
@@ -1184,20 +1186,19 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     }
     drawOverlay();
   };
-
   const onPointerUp = () => {
     const d = draftRef.current;
     const g = dragRef.current;
     draftRef.current = null;
     dragRef.current = null;
-    freePanRef.current = null;
+    freePanRef.current = null; // FIX PANEO LIBRE: fin del paneo
     if (axisDragRef.current?.raf) cancelAnimationFrame(axisDragRef.current.raf);
-    axisDragRef.current = null;
+    axisDragRef.current = null; // FIX ETAPA 2: fin del arrastre de eje
     if (d && (d.t1 !== d.t2 || d.p1 !== d.p2)) {
       const nd = { ...d, id: Date.now() };
       updateDrawings((prev) => [...prev, nd]);
       select(nd.id);
-      setTool('cursor');
+      setTool('cursor'); // al terminar un trazo vuelves al cursor para poder editarlo
     } else if (g) {
       updateDrawings((prev) => prev.map((x) => (x.id === g.id ? g.shape : x)));
       setDraggingId(null);
@@ -1305,7 +1306,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
     setPlaying(false);
   };
 
-  // Estadísticas en vivo
+  // Estadísticas en vivo: operaciones del replay ya guardadas + las que aún no guardas
   const stats = useMemo(() => {
     const list = [...savedTrades.filter((t) => t.pnlUSD !== undefined), ...sessionTrades].sort(
       (a, b) => (a.dateISO || '').localeCompare(b.dateISO || '') || a.id - b.id
@@ -1348,6 +1349,8 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
 
   return (
     <div className="fixed inset-0 md:static md:inset-auto md:h-auto overflow-hidden md:overflow-visible flex flex-col md:block md:space-y-4">
+     
+
       {/* MÓVIL: MENÚ HAMBURGUESA */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-[70] flex">
@@ -1394,7 +1397,7 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
               {error && <p className="text-[11px] font-mono text-rose-400">{error}</p>}
             </div>
 
-            <div className="border-t border-slate-800 pt-3 space-y-3">
+                                    <div className="border-t border-slate-800 pt-3 space-y-3">
               <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Operativa</p>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1562,4 +1565,594 @@ export default function Replay({ onSave, savedTrades = [], active = true }) {
       <div className="hidden md:flex bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-wrap items-center gap-3 text-xs font-mono">
         <label className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
           Cargar CSV
-         
+          <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
+        </label>
+        <button
+          onClick={() => loadData(genSample(), 'datos-simulados (1m)', 'ny')}
+          className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+        >
+          Datos de ejemplo
+        </button>
+        {fileName && (
+          <span className="text-slate-400">
+            {fileName} - {data.length} velas - base {TIMEFRAMES.find((x) => x.sec === baseSec)?.label || `${baseSec}s`}
+          </span>
+        )}
+        {loading && <span className="text-slate-400">Procesando datos...</span>}
+        {data.length > 0 && (
+          <button
+            onClick={forgetSaved}
+            className={`${btn} bg-slate-950 text-slate-400 border-slate-800 hover:text-rose-300`}
+            title="Borra el CSV y el estado guardados en este navegador"
+          >
+            Olvidar datos guardados
+          </button>
+        )}
+        {error && <span className="text-rose-400">{error}</span>}
+      </div>
+
+      {data.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-xs font-mono text-slate-500 space-y-2">
+          <p>Carga un CSV con encabezados: time (o date + time), open, high, low, close.</p>
+          <p>Los datos de ejemplo sirven solo para probar el replay, no para evaluar estrategias.</p>
+        </div>
+      ) : (
+        <>
+          {/* GRÁFICO */}
+          <div className="flex-1 min-h-0 flex flex-col bg-slate-900 border border-slate-800 md:rounded-2xl p-0 md:p-4 gap-0 md:gap-3">
+            <div className="hidden md:flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                {allowed.map((x) => (
+                  <button
+                    key={x.sec}
+                   onClick={() => {
+                      setTf(x.sec);
+                      setPan(0);
+                      setYRange(null);
+                    }}
+                    className={`${btn} ${
+                      tf === x.sec
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    {x.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-slate-400">
+                  {fmtTime(data[pos].t)} - {data[pos].c.toFixed(2)}
+                </span>
+                <button
+                  onClick={() => setPanelOpen((o) => !o)}
+                  aria-label="Mostrar u ocultar el panel de órdenes"
+                  title={panelOpen ? 'Ocultar panel de órdenes' : 'Mostrar panel de órdenes'}
+                  className={`${btn} text-base leading-none ${
+                    panelOpen
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                      : 'bg-slate-950 text-slate-300 border-slate-800 hover:text-white'
+                  }`}
+                >
+                  ☰
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden md:flex flex-wrap items-center gap-1.5">
+              <button
+                onClick={() => setVisible(ZOOM_STEPS[Math.max(0, ZOOM_STEPS.indexOf(visible) - 1)])}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                Acercar
+              </button>
+              <button
+                onClick={() => setVisible(ZOOM_STEPS[Math.min(ZOOM_STEPS.length - 1, ZOOM_STEPS.indexOf(visible) + 1)])}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                Alejar
+              </button>
+              <button
+                onClick={() => setPan((p) => Math.min(p + Math.ceil(visible / 4), Math.max(0, findAggIndex(agg, pos) - Math.floor(visible / 3))))}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                ◀ Atrás
+              </button>
+              <button
+                onClick={() => setPan((p) => Math.max(0, p - Math.ceil(visible / 4)))}
+                disabled={pan === 0}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white disabled:opacity-40`}
+              >
+                Adelante ▶
+              </button>
+              {pan > 0 && (
+                <button onClick={() => setPan(0)} className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
+                  Ir al presente
+                </button>
+              )}
+              {yRange && (
+                <button onClick={() => setYRange(null)} className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
+                  Resetear zoom Y
+                </button>
+              )}
+              <span className="text-[10px] font-mono text-slate-500 ml-1">{visible} velas</span>
+              <button
+                onClick={() => setAxisCsv((x) => !x)}
+                title="Hora que muestra el eje inferior"
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
+              >
+                Eje: {axisCsv ? 'hora CSV' : 'hora NY'}
+              </button>
+              <label className="flex items-center gap-1 text-[10px] font-mono text-slate-400 ml-2 cursor-pointer">
+                <input type="checkbox" checked={showSessions} onChange={(e) => setShowSessions(e.target.checked)} className="accent-emerald-500" />
+                Sesiones
+              </label>
+              <select
+                value={tzMode}
+                onChange={(e) => setTzMode(e.target.value)}
+                title="Zona horaria de las horas del CSV"
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[10px] font-mono text-slate-300"
+              >
+                {TZ_MODES.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="hidden md:flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-mono text-slate-500 mr-1">Dibujo:</span>
+              {[
+                ['cursor', 'Cursor'],
+                ['line', 'Línea'],
+                ['rect', 'Rectángulo'],
+                ['fib', 'Fib 50%']
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setTool(id)}
+                  className={`${btn} ${
+                    tool === id
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              <span className="mx-1 text-slate-700">|</span>
+              <button
+                onClick={deleteSelected}
+                disabled={!selectedId}
+                className={`${btn} bg-slate-950 text-rose-400 border-rose-500/30 hover:text-rose-300 disabled:opacity-40`}
+              >
+                Borrar seleccionado
+              </button>
+              <button
+                onClick={() => {
+                  updateDrawings(() => []);
+                  select(null);
+                  drawOverlay();
+                }}
+                disabled={!drawings.length}
+                className={`${btn} bg-slate-950 text-rose-400 border-rose-500/30 hover:text-rose-300 disabled:opacity-40`}
+              >
+                Borrar todo ({drawings.length})
+              </button>
+              {[
+                ['line', 'Líneas'],
+                ['rect', 'Rectángulos'],
+                ['fib', 'Fib']
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => {
+                    updateDrawings((prev) => prev.filter((d) => d.type !== id));
+                    select(null);
+                    drawOverlay();
+                  }}
+                  disabled={!count(id)}
+                  className={`${btn} bg-slate-950 text-slate-400 border-slate-800 hover:text-white disabled:opacity-40`}
+                >
+                  Borrar {label.toLowerCase()} ({count(id)})
+                </button>
+              ))}
+            </div>
+
+            <p className="hidden md:block text-[10px] font-mono text-slate-500">
+              Con Cursor: clic para seleccionar, arrastra para mover, arrastra los puntos para editar, Supr para borrar.
+              Con cualquier herramienta: mantén <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300">Shift</kbd> para ángulo recto (0°/45°/90°).
+              Zoom: arrastra <span className="text-slate-300">horizontal</span> sobre el eje de tiempo (abajo) o <span className="text-slate-300">vertical</span> sobre el eje de precio (derecha).
+            </p>
+
+            {showSessions && (
+              <div className="hidden md:flex flex-wrap gap-3 text-[10px] font-mono">
+                {SESSIONS.map((x) => (
+                  <span key={x.id} style={{ color: x.color }}>
+                    ■ {x.label} {x.start}-{x.end} ET
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* MÓVIL: BARRA COMPACTA PEGADA AL GRÁFICO */}
+            <div className="md:hidden flex items-center gap-2">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Abrir menú"
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-base leading-none cursor-pointer"
+              >
+                ☰
+              </button>
+              <div className="flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex gap-1">
+                  {data.length > 0 && allowed.map((x) => (
+                    <button
+                      key={x.sec}
+                      onClick={() => {
+                        setTf(x.sec);
+                        setPan(0);
+                        setYRange(null);
+                      }}
+                      className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                        tf === x.sec
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                          : 'bg-slate-950 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      {x.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileToolsOpen((o) => !o)}
+                aria-label="Herramientas de dibujo"
+                className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border text-base leading-none cursor-pointer ${
+                  mobileToolsOpen
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                    : 'bg-slate-950 text-slate-300 border-slate-800'
+                }`}
+              >
+                ✏️
+              </button>
+            </div>
+
+            {/* MÓVIL: FRANJA HERRAMIENTAS PEGADA AL GRÁFICO */}
+            {mobileToolsOpen && data.length > 0 && (
+              <div className="md:hidden flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {[
+                  ['cursor', 'Cursor'],
+                  ['line', 'Línea'],
+                  ['rect', 'Rect'],
+                  ['fib', 'Fib']
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setTool(id)}
+                    className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                      tool === id
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                        : 'bg-slate-950 text-slate-400 border-slate-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={deleteSelected}
+                  disabled={!selectedId}
+                  className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
+                >
+                  Borrar
+                </button>
+                <button
+                  onClick={() => { updateDrawings(() => []); select(null); drawOverlay(); }}
+                  disabled={!drawings.length}
+                  className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
+                >
+                  Borrar todo ({drawings.length})
+                </button>
+              </div>
+            )}
+
+            <div ref={chartWrapRef} className="relative flex-1 min-h-0 md:flex-none md:aspect-[9/4]">
+               <canvas ref={canvasRef} width={900} height={400} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
+              <canvas
+                ref={overlayRef}
+                width={900}
+                height={400}
+                className="absolute inset-0 w-full h-full outline-none"
+                style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: 'none' }}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerLeave}
+                tabIndex={0}
+                onKeyDown={onKeyDown}
+              />
+              {/* Ejecución rápida: funciona aunque el panel de órdenes esté oculto */}
+                            <div className="hidden md:flex md:absolute md:bottom-auto md:left-auto md:right-[10.5%] md:top-2 md:z-10 items-center justify-end gap-1">
+                {position ? (
+                  <button
+                    onClick={closeAtMarket}
+                    className={`${btn} bg-slate-800 border-slate-600 font-bold ${floatUSD >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+                  >
+                    Cerrar {floatUSD >= 0 ? '+' : '-'}${Math.abs(floatUSD).toFixed(2)}
+                  </button>
+                ) : (
+                  <>
+                    <span className="hidden md:inline text-[10px] font-mono text-slate-400 mr-1">
+                      {nContracts}x - SL {slPts} - TP {tpPts}
+                    </span>
+                    <button
+                      onClick={() => openPosition('SELL')}
+                      disabled={atEnd || limitHit}
+                      className={`${btn} bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
+                    >
+                      Vender
+                    </button>
+                    <button
+                      onClick={() => openPosition('BUY')}
+                      disabled={atEnd || limitHit}
+                      className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
+                    >
+                      Comprar
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setPlaying(!playing)}
+                disabled={atEnd}
+                className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
+              >
+                {playing ? 'Pausa' : 'Reproducir'}
+              </button>
+              <button
+                onClick={() => stepRef.current(1)}
+                disabled={atEnd}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white disabled:opacity-40`}
+              >
+                +1 vela base
+              </button>
+              <button
+                onClick={nextCandle}
+                disabled={atEnd}
+                className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white disabled:opacity-40`}
+              >
+                Siguiente vela {tfLabel}
+              </button>
+              <select
+                value={speed}
+                onChange={(e) => setSpeed(Number(e.target.value))}
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs font-mono text-slate-300"
+              >
+                {SPEEDS.map((s) => (
+                  <option key={s} value={s}>
+                    {s} velas/s
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <input
+                type="range"
+                min={0}
+                max={data.length - 1}
+                value={pos}
+                disabled={!!position}
+                onChange={(e) => {
+                  setPlaying(false);
+                  setPos(Number(e.target.value));
+                }}
+                className="w-full accent-emerald-500 disabled:opacity-40"
+              />
+              <p className="text-[10px] font-mono text-slate-500">
+                {position ? 'Cierra la operación para mover el punto de inicio.' : 'Arrastra para elegir desde dónde empezar.'}
+              </p>
+            </div>
+            
+            {/* MÓVIL: BOTONES VENDER/COMPRAR GRANDES */}
+            <div className="md:hidden flex gap-2 pt-1">
+              {position ? (
+                <button
+                  onClick={closeAtMarket}
+                  className={`flex-1 py-3 rounded-xl font-bold text-sm font-mono cursor-pointer ${
+                    floatUSD >= 0
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'bg-rose-500 text-slate-950'
+                  }`}
+                >
+                  Cerrar {floatUSD >= 0 ? '+' : '-'}${Math.abs(floatUSD).toFixed(2)}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => openPosition('SELL')}
+                    disabled={atEnd || limitHit}
+                    className="flex-1 py-3 rounded-xl bg-rose-500 text-slate-950 font-bold text-sm font-mono cursor-pointer disabled:opacity-40"
+                  >
+                    Vender
+                  </button>
+                  <button
+                    onClick={() => openPosition('BUY')}
+                    disabled={atEnd || limitHit}
+                    className="flex-1 py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm font-mono cursor-pointer disabled:opacity-40"
+                  >
+                    Comprar
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* OPERATIVA (colapsable con el botón ☰) */}
+          {panelOpen && (
+          <>
+          <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setPanelOpen(false)} />
+          <div className="fixed md:static bottom-0 left-0 right-0 z-50 md:z-auto max-h-[80vh] overflow-y-auto md:max-h-none md:overflow-visible bg-slate-900 border-t md:border border-slate-800 rounded-t-2xl md:rounded-2xl p-4 space-y-3">
+            <div className="flex justify-between items-center md:hidden">
+              <span className="text-xs font-mono text-slate-400">Panel de órdenes</span>
+              <button onClick={() => setPanelOpen(false)} className="text-slate-400 text-lg leading-none cursor-pointer">✕</button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">SL (puntos)</label>
+                <input type="number" min="0" step="any" value={slPts} onChange={(e) => setSlPts(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">TP (puntos)</label>
+                <input type="number" min="0" step="any" value={tpPts} onChange={(e) => setTpPts(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Sesión</label>
+                <select value={session} onChange={(e) => setSession(e.target.value)} disabled={!!position} className={fieldClass}>
+                  <option value="NY">NY</option>
+                  <option value="LONDON">Londres</option>
+                  <option value="ASIA">Asia</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Contratos</label>
+                <input type="number" min="1" step="1" value={contracts} onChange={(e) => setContracts(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Valor por punto ($)</label>
+                <input type="number" min="0" step="any" value={pointValue} onChange={(e) => setPointValue(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Comisión/contrato ($, ida y vuelta)</label>
+                <input type="number" min="0" step="any" value={commission} onChange={(e) => setCommission(e.target.value)} disabled={!!position} className={fieldClass} />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono mb-1">Límite pérdida diaria ($, 0 = sin límite)</label>
+                <input type="number" min="0" step="any" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} className={fieldClass} />
+              </div>
+            </div>
+
+            <p className="text-[11px] font-mono text-slate-500">
+              {CONTRACT_SYMBOL} - Riesgo: ${riskUSD.toFixed(2)} - Objetivo: ${rewardUSD.toFixed(2)} (netos de comisión) - P&L del día: {dailyPnL >= 0 ? '+' : '-'}${Math.abs(dailyPnL).toFixed(2)}
+            </p>
+
+            {limitHit && (
+              <p className="text-xs text-rose-400 font-mono">
+                Límite de pérdida diaria alcanzado: sin nuevas entradas hoy.
+              </p>
+            )}
+
+            {position ? (
+              <>
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
+                <span className="text-slate-300">
+                  {position.type} {position.contracts}x {CONTRACT_SYMBOL} en {position.entry} - SL {position.sl} - TP {position.tp}
+                </span>
+                <span className={`font-bold ${floatUSD >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {floatPts >= 0 ? '+' : ''}{floatPts.toFixed(2)} pts - {floatUSD >= 0 ? '+' : '-'}${Math.abs(floatUSD).toFixed(2)} - {floatR >= 0 ? '+' : ''}{floatR.toFixed(2)}R
+                </span>
+                <button onClick={closeAtMarket} className={`${btn} bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700`}>
+                  Cerrar a mercado
+                </button>
+              </div>
+              <div className="flex flex-wrap items-end gap-2 text-xs font-mono">
+                <div className="w-32">
+                  <label className="block text-[10px] text-slate-500 mb-1">Nuevo SL (precio)</label>
+                  <input type="number" step="any" value={editSl} onChange={(e) => setEditSl(e.target.value)} className={fieldClass} />
+                </div>
+                <div className="w-32">
+                  <label className="block text-[10px] text-slate-500 mb-1">Nuevo TP (precio)</label>
+                  <input type="number" step="any" value={editTp} onChange={(e) => setEditTp(e.target.value)} className={fieldClass} />
+                </div>
+                <button onClick={applyLevels} className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}>
+                  Aplicar
+                </button>
+                <button onClick={moveToBreakEven} className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}>
+                  Break-even
+                </button>
+              </div>
+              </>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openPosition('BUY')}
+                  disabled={atEnd || limitHit}
+                  className={`${btn} flex-1 bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
+                >
+                  Comprar (BUY)
+                </button>
+                <button
+                  onClick={() => openPosition('SELL')}
+                  disabled={atEnd || limitHit}
+                  className={`${btn} flex-1 bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
+                >
+                  Vender (SELL)
+                </button>
+              </div>
+            )}
+          </div>
+          </>
+          )}
+
+          {/* ESTADÍSTICAS EN VIVO */}
+          {stats.n > 0 && (
+            <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <h3 className="text-sm font-bold text-white font-mono">Estadísticas del Replay (en vivo)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-xs font-mono">
+                {[
+                  ['Trades', stats.n, 'text-white'],
+                  ['Win Rate', `${stats.winRate.toFixed(1)}%`, 'text-white'],
+                  ['R total', `${stats.totalR >= 0 ? '+' : ''}${stats.totalR.toFixed(2)}R`, stats.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'],
+                  ['P&L neto', `${stats.total >= 0 ? '+' : '-'}$${Math.abs(stats.total).toFixed(2)}`, stats.total >= 0 ? 'text-emerald-400' : 'text-rose-400'],
+                  ['Profit Factor', stats.pf === Infinity ? '∞' : stats.pf.toFixed(2), 'text-white'],
+                  ['Max DD', `-$${stats.dd.toFixed(2)}`, 'text-rose-400']
+                ].map(([label, value, color]) => (
+                  <div key={label}>
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500">{label}</p>
+                    <p className={`text-base font-bold mt-0.5 ${color}`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+              <svg viewBox="0 0 300 70" preserveAspectRatio="none" className="w-full h-20 bg-slate-950 rounded-lg">
+                <line x1="0" y1={stats.zeroY} x2="300" y2={stats.zeroY} stroke="#334155" strokeDasharray="3 3" />
+                <polyline points={stats.pts} fill="none" stroke="#10b981" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+              </svg>
+            </div>
+          )}
+
+          {/* OPERACIONES DE ESTA SESIÓN */}
+          {sessionTrades.length > 0 && (
+            <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white font-mono">
+                  Operaciones sin guardar ({sessionTrades.length})
+                </h3>
+                <button
+                  onClick={handleSave}
+                  className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}
+                >
+                  Guardar en registro 🔒
+                </button>
+              </div>
+              <ul className="space-y-1 text-xs font-mono">
+                {sessionTrades.map((t) => (
+                  <li key={t.id} className="flex justify-between text-slate-400">
+                    <span>
+                      {t.date} - {t.type} - {t.session}
+                    </span>
+                    <span className={t.resultR > 0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}>
+                      {t.resultR > 0 ? '+' : ''}{t.resultR}R ({t.pnlUSD >= 0 ? '+' : '-'}${Math.abs(t.pnlUSD).toFixed(2)})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
