@@ -4,7 +4,7 @@ import { cloudEnabled, signIn, signUp, signOut } from '../services/cloud.js';
 const input =
   'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-base md:text-sm text-white focus:outline-none focus:border-emerald-500 font-mono';
 
-export default function CloudPanel({ user, status, onSyncNow }) {
+export default function CloudPanel({ user, status, onSyncNow, onRequestAuth }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,10 +48,16 @@ export default function CloudPanel({ user, status, onSyncNow }) {
               <div className="flex gap-2">
                 <button onClick={onSyncNow} className="flex-1 px-3 py-2 rounded-lg border border-emerald-500/40 text-emerald-400 cursor-pointer">
                   Sincronizar ahora
-                </button>
-                <button onClick={() => signOut()} className="flex-1 px-3 py-2 rounded-lg border border-slate-700 text-slate-300 cursor-pointer">
+                                <button
+                  onClick={() => {
+                    const doSignOut = () => signOut();
+                    if (onRequestAuth) onRequestAuth(doSignOut);
+                    else doSignOut();
+                  }}
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-700 text-slate-300 cursor-pointer"
+                >
                   Salir
-                </button>
+                </button>>
               </div>
             </>
           ) : (
