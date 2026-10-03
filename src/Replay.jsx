@@ -1128,6 +1128,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const g = dragRef.current;
     draftRef.current = null;
     dragRef.current = null;
+    freePanRef.current = null; // FIX PANEO LIBRE: fin del paneo
     if (axisDragRef.current?.raf) cancelAnimationFrame(axisDragRef.current.raf);
     axisDragRef.current = null; // FIX ETAPA 2: fin del arrastre de eje
     if (d && (d.t1 !== d.t2 || d.p1 !== d.p2)) {
