@@ -735,9 +735,9 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const W = cv.width / dpr;
     const H = cv.height / dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const padR = 52;
-    const padY = 10;
-    const padB = 30;
+    const padR = 38;
+    const padY = 6;
+    const padB = 22;
     const plotW = W - padR;
     const plotH = H - padB;
     ctx.clearRect(0, 0, W, H);
@@ -838,7 +838,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
 
     // 2) Cuadrícula y escala de precios con pasos "redondos"
     ctx.lineWidth = 1;
-    ctx.font = '9px monospace';
+    ctx.font = '7px monospace';
     const rawStep = (hi - lo) / 6;
     const mag = 10 ** Math.floor(Math.log10(rawStep));
     const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((x) => x >= rawStep);
@@ -914,7 +914,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     ctx.stroke();
     const minPerCandle = tf / 60;
     const interval = [1, 5, 15, 30, 60, 120, 240, 360, 720, 1440].find((m) => (m / minPerCandle) * cw >= 70) || 1440;
-    ctx.font = '8px monospace';
+    ctx.font = '7px monospace';
     let prevBucket = null;
     let prevDay = null;
     let dateShown = false;
