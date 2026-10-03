@@ -473,7 +473,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const visibleCandles = useMemo(() => {
     if (!agg.length) return [];
     const i = findAggIndex(agg, pos);
-    const maxPan = Math.max(0, i - Math.floor(visible / 3)); // al desplazarte siempre quedan velas en pantalla
+    // FIX PANEO: deja retroceder casi hasta el inicio del histórico (solo visible velas mínimas en pantalla)
+    const maxPan = Math.max(0, i - Math.floor(visible * 0.5));
     const end = Math.max(0, i - Math.min(pan, maxPan));
     const list = agg.slice(Math.max(0, end - visible + 1), end + 1);
     const cur = list[list.length - 1];
@@ -1708,7 +1709,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 width={900}
                 height={400}
                 className="absolute inset-0 w-full h-full outline-none"
-                style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: (tool !== 'cursor' || selectedId) ? 'none' : 'auto' }}
+                style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: 'none' }}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
