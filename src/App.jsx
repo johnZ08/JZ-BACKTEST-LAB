@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Replay from './Replay.jsx';
 import CloudPanel from './components/CloudPanel.jsx';
 import { cloudEnabled, loadCloudData, saveCloudData, getUser, onAuth } from './services/cloud.js';
@@ -14,7 +14,7 @@ export default function App() {
   });
   const [user, setUser] = useState(null);
   const [syncStatus, setSyncStatus] = useState('');
-
+  const skipNextUploadRef = useRef(false);
   const [selectedSession, setSelectedSession] = useState('ALL');
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [isAllTime, setIsAllTime] = useState(false);
@@ -45,6 +45,7 @@ export default function App() {
 
     const mergeAndApply = (cloudData) => {
       if (cancelled || !cloudData) return;
+      skipNextUploadRef.current = true;
       setTrades((prev) => {
         const map = new Map();
         [...prev, ...(cloudData.trades || [])].forEach((t) => {
@@ -87,6 +88,25 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('jz_backtest_trades', JSON.stringify(trades));
   }, [trades]);
+  // Sincronización: sube los trades a Supabase cuando cambian (con debounce y anti-loop)
+  useEffect(() => {
+    if (!cloudEnabled || !user) return undefined;
+    if (skipNextUploadRef.current) {
+      skipNextUploadRef.current = false;
+      return undefined;
+    }
+    setSyncStatus('Guardando...');
+    const id = setTimeout(async () => {
+      try {
+        await saveCloudData({ trades });
+        setSyncStatus('Guardado ✓');
+        setTimeout(() => setSyncStatus(''), 1500);
+      } catch (err) {
+        setSyncStatus('Error al guardar: ' + err.message);
+      }
+    }, 1200);
+    return () => clearTimeout(id);
+  }, [trades, user]);
 
   const handlePrevMonth = () => {
     setIsAllTime(false);
