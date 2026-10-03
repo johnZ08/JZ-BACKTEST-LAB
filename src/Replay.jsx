@@ -738,7 +738,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     viewRef.current = v;
     const y = (p) => viewPriceToY(v, p);
 
-    // 1) Sesiones (fondo translúcido) y apertura de NY
+        // 1) Sesiones (fondo translúcido dentro del rango de precios de cada sesión) y apertura de NY
     const marks = [];
     if (showSessions) {
       const tFrom = vc[0].t;
@@ -748,13 +748,34 @@ export default function Replay({ onSave, savedTrades = [] }) {
         const x1 = Math.max(left, viewTimeToX(v, from));
         const x2 = Math.min(plotW, viewTimeToX(v, to));
         if (x2 - x1 < 1) return;
-        ctx.fillStyle = hexToRgba(ses.color, SESSION_ALPHA);
-        ctx.fillRect(x1, 0, x2 - x1, plotH);
-        if (x2 - x1 > 46) {
-          ctx.font = '10px monospace';
-          ctx.fillStyle = hexToRgba(ses.color, 0.75);
-          ctx.fillText(ses.label, x1 + 4, plotH - 6);
+
+        // FIX: el sombreado solo cubre el rango high/low de las velas dentro de la sesión
+        let sLo = Infinity;
+        let sHi = -Infinity;
+        for (const c of vc) {
+          if (c.t + tf > from && c.t < to) {
+            if (c.l < sLo) sLo = c.l;
+            if (c.h > sHi) sHi = c.h;
+          }
         }
+
+        if (sLo !== Infinity && sHi !== -Infinity) {
+          const yHi = y(sHi);
+          const yLo = y(sLo);
+          const vPad = 8; // margen vertical para que el rectángulo respire
+          const top = Math.max(0, yHi - vPad);
+          const bot = Math.min(plotH, yLo + vPad);
+          ctx.fillStyle = hexToRgba(ses.color, SESSION_ALPHA);
+          ctx.fillRect(x1, top, x2 - x1, bot - top);
+
+          // Etiqueta de la sesión arriba del rango, si hay espacio
+          if (x2 - x1 > 46) {
+            ctx.font = '10px monospace';
+            ctx.fillStyle = hexToRgba(ses.color, 0.9);
+            ctx.fillText(ses.label, x1 + 4, Math.max(12, top - 4));
+          }
+        }
+
         if (from >= tFrom) {
           marks.push({ s: ses, x: x1 });
           if (ses.id === 'ny') {
