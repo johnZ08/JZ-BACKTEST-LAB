@@ -1039,12 +1039,26 @@ export default function Replay({ onSave, savedTrades = [] }) {
     }
     drawOverlay();
   };
-  const onPointerMove = (e) => {
+    const onPointerMove = (e) => {
     const v = viewRef.current;
     if (!v) return;
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
     const g = dragRef.current;
+
+    // FIX PANEO LIBRE: si estás arrastrando el canvas, mueve las velas
+    if (freePanRef.current) {
+      const a = freePanRef.current;
+      const dx = x - a.startX;
+      const dy = y - a.startY;
+      const candleShift = Math.round(dx / a.cw);
+      if (candleShift !== 0) setPan(Math.max(0, a.startPan + candleShift));
+      const pricePerPx = (a.startYRange.hi - a.startYRange.lo) / (v.H - v.padY - v.padB);
+      const shift = dy * pricePerPx;
+      setYRange({ lo: a.startYRange.lo + shift, hi: a.startYRange.hi + shift });
+      return;
+    }
+
     // FIX ETAPA 2: si estás arrastrando un eje, se hace zoom y se omite el resto
     if (axisDragRef.current) {
       const a = axisDragRef.current;
@@ -1073,7 +1087,8 @@ export default function Replay({ onSave, savedTrades = [] }) {
       }
       return;
     }
-     else if (draftRef.current) {
+
+    if (draftRef.current) {
       let t2 = viewXToTime(v, x);
       let p2 = viewYToPrice(v, y);
       // FIX ETAPA 1: Shift = snap a múltiplos de 45° (0°, 45°, 90°, ...)
@@ -1094,7 +1109,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
         }
       }
       draftRef.current.t2 = t2;
-      draftRef.current.p2 = p2
+      draftRef.current.p2 = p2;
     } else if (g) {
       g.shape =
         g.kind === 'handle'
