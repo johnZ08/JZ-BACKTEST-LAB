@@ -1025,21 +1025,30 @@ export default function Replay({ onSave, savedTrades = [] }) {
     hoverRef.current = { x, y };
     const g = dragRef.current;
     // FIX ETAPA 2: si estás arrastrando un eje, se hace zoom y se omite el resto
-       if (axisDragRef.current) {
+    if (axisDragRef.current) {
       const a = axisDragRef.current;
       if (a.kind === 'x') {
         const factor = Math.exp((x - a.startX) / 35);
         const nv = Math.max(20, Math.min(1500, Math.round(a.startVisible / factor)));
-        if (a.raf) cancelAnimationFrame(a.raf);
-        a.raf = requestAnimationFrame(() => setVisible(nv));
+        a.pendingVisible = nv;
+        if (!a.raf) {
+          a.raf = requestAnimationFrame(() => {
+            if (a.pendingVisible !== undefined) setVisible(a.pendingVisible);
+            a.raf = null;
+          });
+        }
       } else {
         const factor = Math.exp((y - a.startY) / 15);
         const { lo, hi } = a.startRange;
         const center = (lo + hi) / 2;
         const half = ((hi - lo) / 2) * factor;
-        const next = { lo: center - half, hi: center + half };
-        if (a.raf) cancelAnimationFrame(a.raf);
-        a.raf = requestAnimationFrame(() => setYRange(next));
+        a.pendingYRange = { lo: center - half, hi: center + half };
+        if (!a.raf) {
+          a.raf = requestAnimationFrame(() => {
+            if (a.pendingYRange) setYRange(a.pendingYRange);
+            a.raf = null;
+          });
+        }
       }
       return;
     }
