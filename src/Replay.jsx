@@ -443,6 +443,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const selectedRef = useRef(null);
   const dragRef = useRef(null);
   const axisDragRef = useRef(null); // FIX ETAPA 2: arrastre sobre los ejes para hacer zoom
+  const freePanRef = useRef(null);
   drawingsRef.current = drawings;
   const stepRef = useRef();
     // FIX: bloquea el scroll de la página en móvil mientras Replay está montado
