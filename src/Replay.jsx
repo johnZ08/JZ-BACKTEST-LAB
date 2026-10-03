@@ -419,7 +419,9 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const [drawings, setDrawings] = useState([]);
   const [ready, setReady] = useState(false); // true cuando terminó de restaurar lo guardado
   const [loading, setLoading] = useState(true);
-  const [panelOpen, setPanelOpen] = useState(true); // panel de órdenes (menú hamburguesa)
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
   const [selectedId, setSelectedId] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
@@ -1217,9 +1219,142 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
   return (
-    <div className="space-y-4 pb-24 md:pb-0">
-      {/* CARGA DE DATOS */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center gap-3 text-xs font-mono">
+    <div className="space-y-4 pt-12 pb-24 md:pt-0 md:pb-0">
+      {/* MÓVIL: BARRA SUPERIOR */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-2 py-1.5 flex items-center gap-2">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Abrir menú"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-base leading-none cursor-pointer"
+        >
+          ☰
+        </button>
+        <div className="flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-1">
+            {data.length > 0 && allowed.map((x) => (
+              <button
+                key={x.sec}
+                onClick={() => {
+                  setTf(x.sec);
+                  setPan(0);
+                  setYRange(null);
+                }}
+                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                  tf === x.sec
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                }`}
+              >
+                {x.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={() => setMobileToolsOpen((o) => !o)}
+          aria-label="Herramientas de dibujo"
+          className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border text-base leading-none cursor-pointer ${
+            mobileToolsOpen
+              ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+              : 'bg-slate-950 text-slate-300 border-slate-800'
+          }`}
+        >
+          ✏️
+        </button>
+      </div>
+
+      {/* MÓVIL: FRANJA DE HERRAMIENTAS */}
+      {mobileToolsOpen && data.length > 0 && (
+        <div className="md:hidden fixed top-[44px] left-0 right-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-2 py-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-1">
+            {[
+              ['cursor', 'Cursor'],
+              ['line', 'Línea'],
+              ['rect', 'Rect'],
+              ['fib', 'Fib']
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setTool(id)}
+                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                  tool === id
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              onClick={deleteSelected}
+              disabled={!selectedId}
+              className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
+            >
+              Borrar
+            </button>
+            <button
+              onClick={() => { updateDrawings(() => []); select(null); drawOverlay(); }}
+              disabled={!drawings.length}
+              className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border bg-slate-950 text-rose-400 border-rose-500/30 disabled:opacity-40 cursor-pointer"
+            >
+              Borrar todo ({drawings.length})
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MÓVIL: MENÚ HAMBURGUESA */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[70] flex">
+          <div className="flex-1 bg-black/70" onClick={() => setMobileMenuOpen(false)} />
+          <div className="w-[85%] max-w-sm bg-slate-900 border-l border-slate-800 overflow-y-auto p-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-sm font-bold text-white font-mono">Menú</h2>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-slate-400 text-xl leading-none w-8 h-8 flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Datos</p>
+              <label className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer">
+                Cargar CSV
+                <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
+              </label>
+              <button
+                onClick={() => { loadData(genSample(), 'datos-simulados (1m)', 'ny'); setMobileMenuOpen(false); }}
+                className="block w-full text-center px-3 py-2 rounded-lg bg-slate-950 text-slate-300 border border-slate-800 text-xs font-mono cursor-pointer"
+              >
+                Datos de ejemplo
+              </button>
+              {data.length > 0 && (
+                <button
+                  onClick={forgetSaved}
+                  className="block w-full text-center px-3 py-2 rounded-lg bg-slate-950 text-slate-400 border border-slate-800 text-xs font-mono cursor-pointer"
+                >
+                  Olvidar datos guardados
+                </button>
+              )}
+              {fileName && (
+                <p className="text-[10px] font-mono text-slate-500">
+                  {fileName} — {data.length} velas
+                </p>
+              )}
+              {error && <p className="text-[11px] font-mono text-rose-400">{error}</p>}
+            </div>
+
+            <p className="text-[10px] font-mono text-slate-500 border-t border-slate-800 pt-3">
+              Más opciones (panel de órdenes, estadísticas, preferencias) se añadirán en el siguiente paso.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* CARGA DE DATOS (escritorio) */}
+      <div className="hidden md:flex bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-wrap items-center gap-3 text-xs font-mono">
         <label className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
           Cargar CSV
           <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
@@ -1257,7 +1392,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
         <>
           {/* GRÁFICO */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="hidden md:flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-1.5">
                 {allowed.map((x) => (
                   <button
@@ -1296,7 +1431,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="hidden md:flex flex-wrap items-center gap-1.5">
               <button
                 onClick={() => setVisible(ZOOM_STEPS[Math.max(0, ZOOM_STEPS.indexOf(visible) - 1)])}
                 className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
@@ -1358,7 +1493,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </select>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="hidden md:flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] font-mono text-slate-500 mr-1">Dibujo:</span>
               {[
                 ['cursor', 'Cursor'],
@@ -1417,14 +1552,14 @@ export default function Replay({ onSave, savedTrades = [] }) {
               ))}
             </div>
 
-            <p className="text-[10px] font-mono text-slate-500">
+            <p className="hidden md:block text-[10px] font-mono text-slate-500">
               Con Cursor: clic para seleccionar, arrastra para mover, arrastra los puntos para editar, Supr para borrar.
               Con cualquier herramienta: mantén <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300">Shift</kbd> para ángulo recto (0°/45°/90°).
               Zoom: arrastra <span className="text-slate-300">horizontal</span> sobre el eje de tiempo (abajo) o <span className="text-slate-300">vertical</span> sobre el eje de precio (derecha).
             </p>
 
             {showSessions && (
-              <div className="flex flex-wrap gap-3 text-[10px] font-mono">
+              <div className="hidden md:flex flex-wrap gap-3 text-[10px] font-mono">
                 {SESSIONS.map((x) => (
                   <span key={x.id} style={{ color: x.color }}>
                     ■ {x.label} {x.start}-{x.end} ET
