@@ -423,6 +423,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [panLock, setPanLock] = useState(false);
+  const [sizeTick, setSizeTick] = useState(0);
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
   const [selectedId, setSelectedId] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
@@ -435,6 +436,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
 
   const canvasRef = useRef(null);
   const overlayRef = useRef(null);
+  const chartWrapRef = useRef(null);
   const viewRef = useRef(null);
   const draftRef = useRef(null);
   const hoverRef = useRef(null);
@@ -447,6 +449,33 @@ export default function Replay({ onSave, savedTrades = [] }) {
   drawingsRef.current = drawings;
   const stepRef = useRef();
     // FIX: bloquea el scroll de la página en móvil mientras Replay está montado
+    // FIX: canvas responsive — el bitmap coincide con el tamaño real del contenedor (evita deformación)
+  useEffect(() => {
+    const wrap = chartWrapRef.current;
+    const canvas = canvasRef.current;
+    const overlay = overlayRef.current;
+    if (!wrap || !canvas || !overlay) return undefined;
+    const update = () => {
+      const r = wrap.getBoundingClientRect();
+      const w = Math.max(1, Math.round(r.width));
+      const h = Math.max(1, Math.round(r.height));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        overlay.width = w;
+        overlay.height = h;
+        setSizeTick((t) => t + 1);
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(wrap);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
@@ -920,7 +949,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       ctx.fillRect(x - 1, plotH, 2, 8);
       ctx.fillText(`${ses.label} ${ses.start}`, Math.min(x + 3, plotW - 70), H - 4);
     });
-}, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange]);
+}, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange, sizeTick]);
 
   // Capa interactiva (cruz, dibujo en curso, edición): se pinta sin re-renderizar React
   const drawOverlay = () => {
@@ -1827,7 +1856,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             )}
 
-            <div className="relative flex-1 min-h-0 md:flex-none md:aspect-[9/4]">
+            <div ref={chartWrapRef} className="relative flex-1 min-h-0 md:flex-none md:aspect-[9/4]">
                <canvas ref={canvasRef} width={900} height={400} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
               <canvas
                 ref={overlayRef}
