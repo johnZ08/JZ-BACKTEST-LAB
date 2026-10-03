@@ -1025,21 +1025,24 @@ export default function Replay({ onSave, savedTrades = [] }) {
     hoverRef.current = { x, y };
     const g = dragRef.current;
     // FIX ETAPA 2: si estás arrastrando un eje, se hace zoom y se omite el resto
-    if (axisDragRef.current) {
+       if (axisDragRef.current) {
       const a = axisDragRef.current;
       if (a.kind === 'x') {
-        // Arrastrar a la DERECHA = acercar (menos velas); a la IZQUIERDA = alejar
         const factor = Math.exp((x - a.startX) / 35);
-        const nv = Math.round(Math.max(20, Math.min(1500, a.startVisible / factor)));
-        if (nv !== visible) setVisible(nv);
+        const nv = Math.max(20, Math.min(1500, Math.round(a.startVisible / factor)));
+        if (a.raf) cancelAnimationFrame(a.raf);
+        a.raf = requestAnimationFrame(() => setVisible(nv));
       } else {
-        // Arrastrar hacia ARRIBA = comprimir rango (zoom in Y); hacia ABAJO = ampliar
         const factor = Math.exp((y - a.startY) / 15);
         const { lo, hi } = a.startRange;
         const center = (lo + hi) / 2;
         const half = ((hi - lo) / 2) * factor;
-        setYRange({ lo: center - half, hi: center + half });
+        const next = { lo: center - half, hi: center + half };
+        if (a.raf) cancelAnimationFrame(a.raf);
+        a.raf = requestAnimationFrame(() => setYRange(next));
       }
+      return;
+    }
     } else if (draftRef.current) {
       let t2 = viewXToTime(v, x);
       let p2 = viewYToPrice(v, y);
@@ -1080,6 +1083,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     const g = dragRef.current;
     draftRef.current = null;
     dragRef.current = null;
+    if (axisDragRef.current?.raf) cancelAnimationFrame(axisDragRef.current.raf);
     axisDragRef.current = null; // FIX ETAPA 2: fin del arrastre de eje
     if (d && (d.t1 !== d.t2 || d.p1 !== d.p2)) {
       const nd = { ...d, id: Date.now() };
