@@ -1219,7 +1219,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
   return (
-    <div className="space-y-4 pb-24 md:pb-0">
+    <div className="h-[100dvh] md:h-auto overflow-hidden md:overflow-visible flex flex-col md:block md:space-y-4">
      
 
       {/* MÓVIL: MENÚ HAMBURGUESA */}
@@ -1378,7 +1378,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       ) : (
         <>
           {/* GRÁFICO */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2 md:p-4 space-y-2 md:space-y-3">
+          <div className="flex-1 min-h-0 flex flex-col bg-slate-900 border border-slate-800 md:rounded-2xl p-0 md:p-4 gap-0 md:gap-3">
             <div className="hidden md:flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-1.5">
                 {allowed.map((x) => (
@@ -1635,7 +1635,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             )}
 
-            <div className="relative h-[55vh] min-h-[300px] md:h-auto md:aspect-[9/4]">
+            <div className="relative flex-1 min-h-0 md:flex-none md:aspect-[9/4]">
                <canvas ref={canvasRef} width={900} height={400} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
               <canvas
                 ref={overlayRef}
