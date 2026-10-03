@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { cloudEnabled, signIn, signUp, signOut } from './cloud.js';
+import { cloudEnabled, signIn, signUp, signOut } from '../services/cloud.js';
 
 const input =
   'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-base md:text-sm text-white focus:outline-none focus:border-emerald-500 font-mono';
