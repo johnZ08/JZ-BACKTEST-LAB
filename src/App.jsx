@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Replay from './Replay.jsx';
+import CloudPanel from './components/CloudPanel.jsx';
+import { cloudEnabled, loadCloudData, saveCloudData, getUser, onAuth } from './services/cloud.js';
 
 export default function App() {
   const [trades, setTrades] = useState(() => {
