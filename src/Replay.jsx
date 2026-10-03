@@ -419,7 +419,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const [drawings, setDrawings] = useState([]);
   const [ready, setReady] = useState(false); // true cuando terminó de restaurar lo guardado
   const [loading, setLoading] = useState(true);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
@@ -1346,9 +1346,77 @@ export default function Replay({ onSave, savedTrades = [] }) {
               {error && <p className="text-[11px] font-mono text-rose-400">{error}</p>}
             </div>
 
-            <p className="text-[10px] font-mono text-slate-500 border-t border-slate-800 pt-3">
-              Más opciones (panel de órdenes, estadísticas, preferencias) se añadirán en el siguiente paso.
-            </p>
+                        <div className="border-t border-slate-800 pt-3 space-y-2">
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Órdenes</p>
+              <button
+                onClick={() => { setMobileMenuOpen(false); setPanelOpen(true); }}
+                className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer"
+              >
+                Abrir panel de órdenes
+              </button>
+            </div>
+
+            {stats.n > 0 && (
+              <div className="border-t border-slate-800 pt-3 space-y-2">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Estadísticas</p>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
+                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Trades</p>
+                    <p className="text-sm font-bold text-white mt-0.5">{stats.n}</p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
+                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Win Rate</p>
+                    <p className="text-sm font-bold text-white mt-0.5">{stats.winRate.toFixed(1)}%</p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
+                    <p className="text-[9px] uppercase tracking-widest text-slate-500">R total</p>
+                    <p className={`text-sm font-bold mt-0.5 ${stats.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {stats.totalR >= 0 ? '+' : ''}{stats.totalR.toFixed(2)}R
+                    </p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
+                    <p className="text-[9px] uppercase tracking-widest text-slate-500">P&L neto</p>
+                    <p className={`text-sm font-bold mt-0.5 ${stats.total >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {stats.total >= 0 ? '+' : '-'}${Math.abs(stats.total).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
+                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Profit Factor</p>
+                    <p className="text-sm font-bold text-white mt-0.5">
+                      {stats.pf === Infinity ? '∞' : stats.pf.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
+                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Max DD</p>
+                    <p className="text-sm font-bold text-rose-400 mt-0.5">-${stats.dd.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sessionTrades.length > 0 && (
+              <div className="border-t border-slate-800 pt-3 space-y-2">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">
+                  Sin guardar ({sessionTrades.length})
+                </p>
+                <button
+                  onClick={handleSave}
+                  className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer"
+                >
+                  Guardar en registro 🔒
+                </button>
+                <ul className="space-y-1 text-[11px] font-mono">
+                  {sessionTrades.map((t) => (
+                    <li key={t.id} className="flex justify-between text-slate-400">
+                      <span>{t.date} - {t.type}</span>
+                      <span className={t.resultR > 0 ? 'text-emerald-400' : t.resultR < 0 ? 'text-rose-400' : 'text-slate-400'}>
+                        {t.resultR > 0 ? '+' : ''}{t.resultR}R
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1778,7 +1846,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
 
           {/* ESTADÍSTICAS EN VIVO */}
           {stats.n > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
               <h3 className="text-sm font-bold text-white font-mono">Estadísticas del Replay (en vivo)</h3>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-xs font-mono">
                 {[
@@ -1804,7 +1872,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
 
           {/* OPERACIONES DE ESTA SESIÓN */}
           {sessionTrades.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white font-mono">
                   Operaciones sin guardar ({sessionTrades.length})
