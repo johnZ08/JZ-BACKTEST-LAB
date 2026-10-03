@@ -396,7 +396,7 @@ const btn = 'px-3 py-1.5 rounded-lg border text-xs font-mono transition cursor-p
 const fieldClass =
   'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono transition';
 
-export default function Replay({ onSave, savedTrades = [], active = true, onGoToRegistro }) {
+export default function Replay({ onSave, savedTrades = [], active = true, onGoToRegistro, onRequestAuth }) {
   const [data, setData] = useState([]);
   const [fileName, setFileName] = useState('');
   const [baseSec, setBaseSec] = useState(60);
@@ -1292,19 +1292,23 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     return () => clearTimeout(id);
   }, [ready, pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts, contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv]);
 
-  const forgetSaved = async () => {
-    try {
-      await idbDel('data');
-    } catch {
-      /* nada que borrar */
-    }
-    localStorage.removeItem(STATE_KEY);
-    setData([]);
-    setFileName('');
-    setPosition(null);
-    setSessionTrades([]);
-    setDrawings([]);
-    setPlaying(false);
+    const forgetSaved = () => {
+    const doForget = async () => {
+      try {
+        await idbDel('data');
+      } catch {
+        /* nada que borrar */
+      }
+      localStorage.removeItem(STATE_KEY);
+      setData([]);
+      setFileName('');
+      setPosition(null);
+      setSessionTrades([]);
+      setDrawings([]);
+      setPlaying(false);
+    };
+    if (onRequestAuth) onRequestAuth(doForget);
+    else doForget();
   };
 
   // Estadísticas en vivo: operaciones del replay ya guardadas + las que aún no guardas
