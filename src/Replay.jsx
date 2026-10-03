@@ -738,7 +738,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
     viewRef.current = v;
     const y = (p) => viewPriceToY(v, p);
 
-        // 1) Sesiones (fondo translúcido dentro del rango de precios de cada sesión) y apertura de NY
+              // 1) Sesiones: sombreado + líneas de high/low + apertura de NY
     const marks = [];
     if (showSessions) {
       const tFrom = vc[0].t;
@@ -749,7 +749,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
         const x2 = Math.min(plotW, viewTimeToX(v, to));
         if (x2 - x1 < 1) return;
 
-        // FIX: el sombreado solo cubre el rango high/low de las velas dentro de la sesión
+        // Rango high/low de las velas dentro de la sesión
         let sLo = Infinity;
         let sHi = -Infinity;
         for (const c of vc) {
@@ -765,8 +765,20 @@ export default function Replay({ onSave, savedTrades = [] }) {
           const vPad = 8; // margen vertical para que el rectángulo respire
           const top = Math.max(0, yHi - vPad);
           const bot = Math.min(plotH, yLo + vPad);
+
+          // Sombreado del rango
           ctx.fillStyle = hexToRgba(ses.color, SESSION_ALPHA);
           ctx.fillRect(x1, top, x2 - x1, bot - top);
+
+          // FIX: líneas de high y low que solo abarcan el ancho de la sesión
+          ctx.strokeStyle = hexToRgba(ses.color, 0.85);
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(x1, yHi);
+          ctx.lineTo(x2, yHi);
+          ctx.moveTo(x1, yLo);
+          ctx.lineTo(x2, yLo);
+          ctx.stroke();
 
           // Etiqueta de la sesión arriba del rango, si hay espacio
           if (x2 - x1 > 46) {
