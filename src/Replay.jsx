@@ -1043,7 +1043,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       }
       return;
     }
-    } else if (draftRef.current) {
+     else if (draftRef.current) {
       let t2 = viewXToTime(v, x);
       let p2 = viewYToPrice(v, y);
       // FIX ETAPA 1: Shift = snap a múltiplos de 45° (0°, 45°, 90°, ...)
