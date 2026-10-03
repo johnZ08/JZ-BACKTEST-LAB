@@ -1378,7 +1378,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
       ) : (
         <>
           {/* GRÁFICO */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2 md:p-4 space-y-2 md:space-y-3">
             <div className="hidden md:flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-1.5">
                 {allowed.map((x) => (
@@ -1635,7 +1635,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
               </div>
             )}
 
-            <div className="relative aspect-[4/3] md:aspect-[9/4]">
+            <div className="relative h-[55vh] min-h-[300px] md:h-auto md:aspect-[9/4]">
                <canvas ref={canvasRef} width={900} height={400} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
               <canvas
                 ref={overlayRef}
@@ -1651,7 +1651,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
                 onKeyDown={onKeyDown}
               />
               {/* Ejecución rápida: funciona aunque el panel de órdenes esté oculto */}
-                            <div className="fixed md:absolute bottom-2 md:bottom-auto left-2 right-2 md:left-auto md:right-[10.5%] md:top-2 z-40 md:z-10 flex items-center justify-end gap-1">
+                            <div className="hidden md:flex md:absolute md:bottom-auto md:left-auto md:right-[10.5%] md:top-2 md:z-10 items-center justify-end gap-1">
                 {position ? (
                   <button
                     onClick={closeAtMarket}
@@ -1734,6 +1734,39 @@ export default function Replay({ onSave, savedTrades = [] }) {
               <p className="text-[10px] font-mono text-slate-500">
                 {position ? 'Cierra la operación para mover el punto de inicio.' : 'Arrastra para elegir desde dónde empezar.'}
               </p>
+            </div>
+            
+            {/* MÓVIL: BOTONES VENDER/COMPRAR GRANDES */}
+            <div className="md:hidden flex gap-2 pt-1">
+              {position ? (
+                <button
+                  onClick={closeAtMarket}
+                  className={`flex-1 py-3 rounded-xl font-bold text-sm font-mono cursor-pointer ${
+                    floatUSD >= 0
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'bg-rose-500 text-slate-950'
+                  }`}
+                >
+                  Cerrar {floatUSD >= 0 ? '+' : '-'}${Math.abs(floatUSD).toFixed(2)}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => openPosition('SELL')}
+                    disabled={atEnd || limitHit}
+                    className="flex-1 py-3 rounded-xl bg-rose-500 text-slate-950 font-bold text-sm font-mono cursor-pointer disabled:opacity-40"
+                  >
+                    Vender
+                  </button>
+                  <button
+                    onClick={() => openPosition('BUY')}
+                    disabled={atEnd || limitHit}
+                    className="flex-1 py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm font-mono cursor-pointer disabled:opacity-40"
+                  >
+                    Comprar
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
