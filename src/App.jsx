@@ -468,7 +468,7 @@ export default function App() {
         </header>
 
         <div className={view === 'replay' ? '' : 'hidden'}>
-           <Replay onSave={handleSaveReplayTrades} savedTrades={trades} active={view === 'replay'} onGoToRegistro={() => setView('registro')} />
+           <Replay onSave={handleSaveReplayTrades} savedTrades={trades} active={view === 'replay'} onGoToRegistro={() => setView('registro')} onRequestAuth={requestAuthorization} />
         </div>
 
         <div className={view === 'registro' ? 'space-y-6' : 'hidden'}>
