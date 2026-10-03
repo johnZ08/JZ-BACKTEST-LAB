@@ -57,7 +57,7 @@ export default function CloudPanel({ user, status, onSyncNow, onRequestAuth }) {
                   className="flex-1 px-3 py-2 rounded-lg border border-slate-700 text-slate-300 cursor-pointer"
                 >
                   Salir
-                </button>>
+                </button>
               </div>
             </>
           ) : (
