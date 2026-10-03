@@ -464,7 +464,7 @@ export default function App() {
               Visualización Libre • Escritura Protegida 🔒
             </span>
           </div>
-          <CloudPanel user={user} status={syncStatus} />
+          <CloudPanel user={user} status={syncStatus} onRequestAuth={requestAuthorization} />
         </header>
 
         <div className={view === 'replay' ? '' : 'hidden'}>
