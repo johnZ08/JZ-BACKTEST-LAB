@@ -38,6 +38,51 @@ export default function App() {
 
   // Fecha del trade (la del backtest, no la de hoy): clave para estilo "replay"
   const [tradeDate, setTradeDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+  // Sincronización: al iniciar sesión, baja datos de Supabase y mergea con locales
+  useEffect(() => {
+    if (!cloudEnabled) return undefined;
+    let cancelled = false;
+
+    const mergeAndApply = (cloudData) => {
+      if (cancelled || !cloudData) return;
+      setTrades((prev) => {
+        const map = new Map();
+        [...prev, ...(cloudData.trades || [])].forEach((t) => {
+          if (t && t.id !== undefined) map.set(t.id, t);
+        });
+        return Array.from(map.values()).sort(
+          (a, b) => (a.dateISO || '').localeCompare(b.dateISO || '') || a.id - b.id
+        );
+      });
+      setSyncStatus('Sincronizado');
+      setTimeout(() => setSyncStatus(''), 2500);
+    };
+
+    const bootstrap = async () => {
+      try {
+        const u = await getUser();
+        if (cancelled) return;
+        setUser(u);
+        if (u) {
+          setSyncStatus('Cargando...');
+          const cloudData = await loadCloudData();
+          mergeAndApply(cloudData);
+        }
+      } catch (err) {
+        setSyncStatus('Error: ' + err.message);
+      }
+    };
+
+    bootstrap();
+    const unsubscribe = onAuth((u) => {
+      setUser(u);
+      if (u) bootstrap();
+    });
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('jz_backtest_trades', JSON.stringify(trades));
