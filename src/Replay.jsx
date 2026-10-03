@@ -1013,12 +1013,12 @@ export default function Replay({ onSave, savedTrades = [] }) {
       const a = axisDragRef.current;
       if (a.kind === 'x') {
         // Arrastrar a la DERECHA = acercar (menos velas); a la IZQUIERDA = alejar
-        const factor = Math.exp((x - a.startX) / 180);
+        const factor = Math.exp((x - a.startX) / 40);
         const nv = Math.round(Math.max(20, Math.min(1500, a.startVisible / factor)));
         if (nv !== visible) setVisible(nv);
       } else {
         // Arrastrar hacia ARRIBA = comprimir rango (zoom in Y); hacia ABAJO = ampliar
-        const factor = Math.exp((y - a.startY) / 180);
+        const factor = Math.exp((y - a.startY) / 30);
         const { lo, hi } = a.startRange;
         const center = (lo + hi) / 2;
         const half = ((hi - lo) / 2) * factor;
@@ -1219,7 +1219,7 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const atEnd = data.length > 0 && pos >= data.length - 1;
 
   return (
-    <div className="h-[100dvh] md:h-auto overflow-hidden md:overflow-visible flex flex-col md:block md:space-y-4">
+    <div className="fixed inset-0 md:static md:inset-auto md:h-auto overflow-hidden md:overflow-visible flex flex-col md:block md:space-y-4">
      
 
       {/* MÓVIL: MENÚ HAMBURGUESA */}
