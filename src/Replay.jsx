@@ -979,6 +979,28 @@ export default function Replay({ onSave, savedTrades = [] }) {
       };
       return;
     }
+        // FIX: paneo libre arrastrando dentro del canvas (si el candado está abierto)
+    if (tool === 'cursor' && !panLock && x <= v.W - v.padR && y <= v.H - v.padB) {
+      const list = drawingsRef.current;
+      const cur = list.find((d) => d.id === selectedRef.current);
+      const overDrawing =
+        (cur && hitHandle(v, cur, x, y)) ||
+        list.some((d) => hitBody(v, d, x, y));
+      if (!overDrawing) {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        freePanRef.current = {
+          startX: x,
+          startY: y,
+          startPan: pan,
+          startYRange: yRange ?? { lo: v.lo, hi: v.hi },
+          cw: v.cw
+        };
+        return;
+      }
+    }
+    if (tool !== 'cursor') {
+      // crear un dibujo nuevo
+      if (x > v.W - v.padR || y > v.H - v.padB) return;
     if (tool !== 'cursor') {
       // crear un dibujo nuevo
       if (x > v.W - v.padR || y > v.H - v.padB) return;
