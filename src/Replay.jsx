@@ -444,6 +444,22 @@ export default function Replay({ onSave, savedTrades = [] }) {
   const axisDragRef = useRef(null); // FIX ETAPA 2: arrastre sobre los ejes para hacer zoom
   drawingsRef.current = drawings;
   const stepRef = useRef();
+    // FIX: bloquea el scroll de la página en móvil mientras Replay está montado
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    if (!isMobile) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    const prevPosition = document.body.style.position;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.position = prevPosition;
+      document.body.style.width = '';
+    };
+  }, []);
 
   const allowed = useMemo(
     () => TIMEFRAMES.filter((x) => x.sec >= baseSec && x.sec % baseSec === 0),
@@ -1013,12 +1029,12 @@ export default function Replay({ onSave, savedTrades = [] }) {
       const a = axisDragRef.current;
       if (a.kind === 'x') {
         // Arrastrar a la DERECHA = acercar (menos velas); a la IZQUIERDA = alejar
-        const factor = Math.exp((x - a.startX) / 40);
+        const factor = Math.exp((x - a.startX) / 35);
         const nv = Math.round(Math.max(20, Math.min(1500, a.startVisible / factor)));
         if (nv !== visible) setVisible(nv);
       } else {
         // Arrastrar hacia ARRIBA = comprimir rango (zoom in Y); hacia ABAJO = ampliar
-        const factor = Math.exp((y - a.startY) / 30);
+        const factor = Math.exp((y - a.startY) / 15);
         const { lo, hi } = a.startRange;
         const center = (lo + hi) / 2;
         const half = ((hi - lo) / 2) * factor;
