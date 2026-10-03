@@ -12,6 +12,8 @@ export default function App() {
       return [];
     }
   });
+  const [user, setUser] = useState(null);
+  const [syncStatus, setSyncStatus] = useState('');
 
   const [selectedSession, setSelectedSession] = useState('ALL');
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
