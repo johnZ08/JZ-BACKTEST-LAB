@@ -488,6 +488,11 @@ export default function App() {
             <span className="text-xs font-mono text-slate-500">
               Visualización Libre • Escritura Protegida 🔒
             </span>
+            {isVitrina && (
+              <div className="text-[11px] font-mono text-amber-400 border border-amber-500/40 rounded-lg px-3 py-1 bg-amber-500/10">
+                👁 Viendo perfil público · solo lectura
+              </div>
+            )}
           </div>
           <CloudPanel user={user} status={syncStatus} onRequestAuth={requestAuthorization} />
         </header>
@@ -685,7 +690,9 @@ export default function App() {
 
         {/* FORMULARIO + HISTORIAL */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {!isVitrina && (
           <form
+          )}
             onSubmit={handleAddTradeSubmit}
             className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 lg:col-span-1 h-fit"
           >
@@ -822,11 +829,13 @@ export default function App() {
                 >
                   Respaldo JSON
                 </button>
+                {!isVitrina && (
                 <label className="text-xs font-mono text-slate-300 hover:text-white border border-slate-700 rounded-lg px-3 py-1.5 transition cursor-pointer">
                   Importar
                   <input type="file" accept=".json" className="hidden" onChange={handleImportJson} />
                 </label>
-                {trades.length > 0 && (
+                )}
+                {!isVitrina && trades.length > 0 && (
                   <button
                     onClick={handleClearAll}
                     className="text-xs font-mono text-rose-400 hover:text-rose-300 border border-rose-500/30 rounded-lg px-3 py-1.5 transition cursor-pointer"
@@ -889,13 +898,15 @@ export default function App() {
                           {t.notes || '—'}
                         </td>
                         <td className="py-2 text-right">
-                          <button
-                            onClick={() => handleDeleteTrade(t.id)}
-                            className="text-slate-500 hover:text-rose-400 px-2 py-1 transition cursor-pointer"
-                            title="Eliminar (requiere autorización)"
-                          >
-                            ✕
-                          </button>
+                           {!isVitrina && (
+                            <button
+                              onClick={() => handleDeleteTrade(t.id)}
+                              className="text-slate-500 hover:text-rose-400 px-2 py-1 transition cursor-pointer"
+                              title="Eliminar (requiere autorización)"
+                            >
+                              ✕
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
