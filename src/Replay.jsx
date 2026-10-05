@@ -310,9 +310,21 @@ const anchorsOf = (v, d) => {
   const y1 = viewPriceToY(v, d.p1);
   const x2 = viewTimeToX(v, d.t2);
   const y2 = viewPriceToY(v, d.p2);
-  return d.type === 'rect'
-    ? { a: [x1, y1], b: [x2, y2], c: [x2, y1], d: [x1, y2] }
-    : { a: [x1, y1], b: [x2, y2] };
+  if (d.type === 'rect') {
+    const xm = (x1 + x2) / 2;
+    const ym = (y1 + y2) / 2;
+    return {
+      a: [x1, y1],
+      b: [x2, y2],
+      c: [x2, y1],
+      d: [x1, y2],
+      m_p1: [xm, y1],
+      m_p2: [xm, y2],
+      m_t1: [x1, ym],
+      m_t2: [x2, ym]
+    };
+  }
+  return { a: [x1, y1], b: [x2, y2] };
 };
 const hitHandle = (v, d, x, y) => {
   const an = anchorsOf(v, d);
@@ -338,7 +350,11 @@ const applyHandle = (d, handle, t, p) => {
   if (handle === 'a') { n.t1 = t; n.p1 = p; }
   else if (handle === 'b') { n.t2 = t; n.p2 = p; }
   else if (handle === 'c') { n.t2 = t; n.p1 = p; }
-  else { n.t1 = t; n.p2 = p; }
+  else if (handle === 'd') { n.t1 = t; n.p2 = p; }
+  else if (handle === 'm_p1') { n.p1 = p; }
+  else if (handle === 'm_p2') { n.p2 = p; }
+  else if (handle === 'm_t1') { n.t1 = t; }
+  else if (handle === 'm_t2') { n.t2 = t; }
   return n;
 };
 const moveShape = (d, v, orig, dx, dy) => ({
@@ -992,14 +1008,19 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     if (draftRef.current) drawShape(ctx, v, draftRef.current, 0.9);
     const g = dragRef.current;
     if (g) drawShape(ctx, v, g.shape);
-    const sel = g ? g.shape : drawingsRef.current.find((d) => d.id === selectedRef.current);
+       const sel = g ? g.shape : drawingsRef.current.find((d) => d.id === selectedRef.current);
     if (sel) {
-      Object.values(anchorsOf(v, sel)).forEach(([x, y]) => {
+      const entries = Object.entries(anchorsOf(v, sel));
+      entries.forEach(([key, [x, y]]) => {
+        const isMid = key.startsWith('m_');
+        const r = isMid ? 3 : 4;
         ctx.fillStyle = '#0f172a';
-        ctx.strokeStyle = '#e2e8f0';
+        ctx.strokeStyle = isMid ? '#94a3b8' : '#e2e8f0';
         ctx.lineWidth = 1.5;
-        ctx.fillRect(x - 4, y - 4, 8, 8);
-        ctx.strokeRect(x - 4, y - 4, 8, 8);
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
       });
     }
   };
