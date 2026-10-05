@@ -425,6 +425,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [panLock, setPanLock] = useState(false);
+  const [angleLock, setAngleLock] = useState(false);
   const [sizeTick, setSizeTick] = useState(0);
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
   const [selectedId, setSelectedId] = useState(null);
