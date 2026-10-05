@@ -981,7 +981,9 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const v = viewRef.current;
     if (!cv || !v) return;
     const ctx = cv.getContext('2d');
-    ctx.clearRect(0, 0, cv.width, cv.height);
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
     const h = hoverRef.current;
     if (h && h.x <= v.W - v.padR && h.y <= v.H - v.padB) {
       ctx.strokeStyle = 'rgba(148,163,184,0.45)';
@@ -1046,10 +1048,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     drawOverlay();
   };
 
-     const eventPoint = (e) => {
+  const eventPoint = (e) => {
     const cv = overlayRef.current;
     const r = cv.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) * cv.width) / r.width, y: ((e.clientY - r.top) * cv.height) / r.height };
+    const dpr = window.devicePixelRatio || 1;
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
    const onPointerDown = (e) => {
     const v = viewRef.current;
