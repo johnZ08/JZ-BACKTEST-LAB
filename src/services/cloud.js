@@ -63,6 +63,19 @@ export async function loadCloudData() {
   return data || null;
 }
 
+// Lee la fila pública de un usuario por su UUID (sin requerir login)
+export async function loadPublicData(userId) {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('jz_sync')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_public', true)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function saveCloudData(payload) {
   const user = await getUser();
   if (!user) return;
