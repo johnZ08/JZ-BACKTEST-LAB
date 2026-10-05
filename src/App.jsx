@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Replay from './Replay.jsx';
 import CloudPanel from './components/CloudPanel.jsx';
-import { cloudEnabled, loadCloudData, saveCloudData, getUser, onAuth } from './services/cloud.js';
+import { cloudEnabled, loadCloudData, saveCloudData, loadPublicData, getUser, onAuth } from './services/cloud.js';
 
 export default function App() {
   const [trades, setTrades] = useState(() => {
@@ -65,6 +65,24 @@ export default function App() {
       setTimeout(() => setSyncStatus(''), 2500);
     };
 
+        // Modo vitrina: carga la fila pública del UUID sin necesidad de login
+    if (isVitrina) {
+      (async () => {
+        try {
+          const publicData = await loadPublicData(vitrinaUuid);
+          if (cancelled) return;
+          if (publicData?.trades) {
+            setTrades(publicData.trades);
+          } else {
+            setTrades([]);
+          }
+        } catch (err) {
+          console.error('Vitrina:', err);
+          setTrades([]);
+        }
+      })();
+    }
+
     const bootstrap = async () => {
       try {
         const u = await getUser();
@@ -91,12 +109,13 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
+    useEffect(() => {
+    if (isVitrina) return; // no guardar trades de vitrina en localStorage local
     localStorage.setItem('jz_backtest_trades', JSON.stringify(trades));
-  }, [trades]);
+  }, [trades, isVitrina]);
   // Sincronización: sube los trades a Supabase cuando cambian (con debounce y anti-loop)
   useEffect(() => {
-    if (!cloudEnabled || !user) return undefined;
+    if (!cloudEnabled || !user || isVitrina) return undefined;
     if (skipNextUploadRef.current) {
       skipNextUploadRef.current = false;
       return undefined;
@@ -112,7 +131,7 @@ export default function App() {
       }
     }, 1200);
     return () => clearTimeout(id);
-  }, [trades, user]);
+  }, [trades, user, isVitrina]);
 
   const handlePrevMonth = () => {
     setIsAllTime(false);
