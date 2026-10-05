@@ -1818,8 +1818,9 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 ))}
               </div>
             )}
-            {/* MÓVIL: BARRA COMPACTA PEGADA AL GRÁFICO */}
-            <div className="md:hidden flex items-center gap-2">
+            
+            {/* BARRA COMPACTA PEGADA AL GRÁFICO */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Abrir menú"
