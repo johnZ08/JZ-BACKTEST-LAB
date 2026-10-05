@@ -692,7 +692,6 @@ export default function App() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {!isVitrina && (
           <form
-          )}
             onSubmit={handleAddTradeSubmit}
             className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 lg:col-span-1 h-fit"
           >
@@ -808,6 +807,7 @@ export default function App() {
               Agregar Operación
             </button>
           </form>
+          )}
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
