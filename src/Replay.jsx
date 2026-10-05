@@ -2023,7 +2023,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               </select>
             </div>
 
-            <div>
+                        <div className="px-1 pt-0.5 pb-0">
               <input
                 type="range"
                 min={0}
@@ -2034,11 +2034,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                   setPlaying(false);
                   setPos(Number(e.target.value));
                 }}
-                className="w-full accent-emerald-500 disabled:opacity-40"
+                className="w-full accent-emerald-500 disabled:opacity-40 h-1 cursor-pointer"
               />
-              <p className="text-[10px] font-mono text-slate-500">
-                {position ? 'Cierra la operación para mover el punto de inicio.' : 'Arrastra para elegir desde dónde empezar.'}
-              </p>
             </div>
             
             {/* MÓVIL: BOTONES VENDER/COMPRAR GRANDES */}
