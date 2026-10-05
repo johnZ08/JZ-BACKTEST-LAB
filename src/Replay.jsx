@@ -476,8 +476,9 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     if (!wrap || !canvas || !overlay) return undefined;
     const update = () => {
       const r = wrap.getBoundingClientRect();
-      const w = Math.max(1, Math.round(r.width));
-      const h = Math.max(1, Math.round(r.height));
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, Math.round(r.width * dpr));
+      const h = Math.max(1, Math.round(r.height * dpr));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
