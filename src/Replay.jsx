@@ -1867,7 +1867,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
 
             {/* MÓVIL: FRANJA HERRAMIENTAS PEGADA AL GRÁFICO */}
             {mobileToolsOpen && data.length > 0 && (
-              <div className="md:hidden flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+               <div className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {[
                   ['cursor', 'Cursor'],
                   ['line', 'Línea'],
