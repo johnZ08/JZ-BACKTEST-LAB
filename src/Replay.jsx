@@ -1605,7 +1605,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       )}
 
       {/* CARGA DE DATOS (escritorio) */}
-      <div className="hidden md:flex bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-wrap items-center gap-3 text-xs font-mono">
+      <div className="hidden">        
         <label className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
           Cargar CSV
           <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
