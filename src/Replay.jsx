@@ -1786,6 +1786,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 Borrar todo ({drawings.length})
               </button>
               {[
+                ['cursor', 'Cursor'],
                 ['line', 'Líneas'],
                 ['rect', 'Rectángulos'],
                 ['fib', 'Fib']
@@ -1885,6 +1886,17 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                     {label}
                   </button>
                 ))}
+                                <button
+                  onClick={() => setAngleLock((a) => !a)}
+                  title={angleLock ? 'Ángulo recto activo (0°/45°/90°)' : 'Trazo libre'}
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                    angleLock
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                      : 'bg-slate-950 text-slate-300 border-slate-800'
+                  }`}
+                >
+                  📐
+                </button>
                 <button
                   onClick={deleteSelected}
                   disabled={!selectedId}
