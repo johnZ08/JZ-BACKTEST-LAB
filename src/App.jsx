@@ -16,6 +16,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState('');
     // Modo vitrina: ?vitrina=<uuid> en la URL muestra los stats públicos de ese usuario
   const [vitrinaUuid] = useState(() => {
+  const [shareMsg, setShareMsg] = useState('');
     if (typeof window === 'undefined') return null;
     return new URLSearchParams(window.location.search).get('vitrina');
   });
@@ -494,6 +495,23 @@ export default function App() {
               </div>
             )}
           </div>
+                      {user && !isVitrina && (
+              <button
+                onClick={() => {
+                  const link = `${window.location.origin}${window.location.pathname}?vitrina=${user.id}`;
+                  navigator.clipboard.writeText(link).then(() => {
+                    setShareMsg('Link copiado ✓');
+                    setTimeout(() => setShareMsg(''), 2000);
+                  }).catch(() => {
+                    setShareMsg('Error al copiar');
+                    setTimeout(() => setShareMsg(''), 2000);
+                  });
+                }}
+                className="px-3 py-2 md:py-1.5 rounded-lg text-xs font-mono font-bold border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer"
+              >
+                {shareMsg || '🔗 Compartir stats'}
+              </button>
+            )}
           <CloudPanel user={user} status={syncStatus} onRequestAuth={requestAuthorization} />
         </header>
 
