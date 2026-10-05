@@ -1387,9 +1387,9 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
 
       {/* MÓVIL: MENÚ HAMBURGUESA */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[70] flex">
+          <div className="fixed inset-0 z-[70] flex">
           <div className="flex-1 bg-black/70" onClick={() => setMobileMenuOpen(false)} />
-          <div className="w-[85%] max-w-sm bg-slate-900 border-l border-slate-800 overflow-y-auto p-4 space-y-4">
+                   <div className="w-[85%] max-w-sm md:w-96 md:max-w-md bg-slate-900 border-l border-slate-800 overflow-y-auto p-4 space-y-4">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-sm font-bold text-white font-mono leading-tight">JZ_BACKTEST_LAB</h2>
