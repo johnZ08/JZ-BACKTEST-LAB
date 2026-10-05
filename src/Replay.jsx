@@ -1178,11 +1178,30 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       }
       draftRef.current.t2 = t2;
       draftRef.current.p2 = p2;
-    } else if (g) {
-      g.shape =
-        g.kind === 'handle'
-          ? applyHandle(g.base, g.handle, viewXToTime(v, x), viewYToPrice(v, y))
-          : moveShape(g.base, v, g.orig, x - g.start.x, y - g.start.y);
+       } else if (g) {
+      if (g.kind === 'handle' && (e.shiftKey || angleLock) && g.base.type === 'line') {
+        // Snap al alargar una línea: usa el extremo opuesto como pivote
+        const an = anchorsOf(v, g.base);
+        const pivot = g.handle === 'a' ? an.b : an.a;
+        const dx = x - pivot[0];
+        const dy = y - pivot[1];
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          const angle = Math.atan2(dy, dx);
+          const snapped = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+          const sx = pivot[0] + Math.cos(snapped) * len;
+          const sy = pivot[1] + Math.sin(snapped) * len;
+          g.shape = applyHandle(g.base, g.handle, viewXToTime(v, sx), viewYToPrice(v, sy));
+        } else {
+          g.shape = applyHandle(g.base, g.handle, viewXToTime(v, x), viewYToPrice(v, y));
+        }
+      } else {
+        g.shape =
+          g.kind === 'handle'
+            ? applyHandle(g.base, g.handle, viewXToTime(v, x), viewYToPrice(v, y))
+            : moveShape(g.base, v, g.orig, x - g.start.x, y - g.start.y);
+      }
+    }
     } else if (tool === 'cursor') {
       const list = drawingsRef.current;
       const cur = list.find((d) => d.id === selectedRef.current);
