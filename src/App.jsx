@@ -15,11 +15,11 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [syncStatus, setSyncStatus] = useState('');
     // Modo vitrina: ?vitrina=<uuid> en la URL muestra los stats públicos de ese usuario
-  const [vitrinaUuid] = useState(() => {
-  const [shareMsg, setShareMsg] = useState('');
+    const [vitrinaUuid] = useState(() => {
     if (typeof window === 'undefined') return null;
     return new URLSearchParams(window.location.search).get('vitrina');
   });
+  const [shareMsg, setShareMsg] = useState('');
   const isVitrina = Boolean(vitrinaUuid);
   const skipNextUploadRef = useRef(false);
   const [selectedSession, setSelectedSession] = useState('ALL');
