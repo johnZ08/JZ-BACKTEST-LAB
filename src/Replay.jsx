@@ -1915,6 +1915,46 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 tabIndex={0}
                 onKeyDown={onKeyDown}
               />
+                            {/* BARRA FLOTANTE DE REPRODUCCIÓN (TradingView style) */}
+              <div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-lg px-1.5 py-1 shadow-lg">
+                <button
+                  onClick={() => setPlaying(!playing)}
+                  disabled={atEnd}
+                  className="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-40 cursor-pointer"
+                  title={playing ? 'Pausa' : 'Reproducir'}
+                >
+                  {playing ? '⏸' : '▶'}
+                </button>
+                <button
+                  onClick={() => stepRef.current(1)}
+                  disabled={atEnd}
+                  className="px-2 py-1 rounded text-xs font-mono bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-40 cursor-pointer"
+                  title="+1 vela base"
+                >
+                  +1
+                </button>
+                <button
+                  onClick={nextCandle}
+                  disabled={atEnd}
+                  className="px-2 py-1 rounded text-xs font-mono bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-40 cursor-pointer"
+                  title={`Siguiente vela ${tfLabel}`}
+                >
+                  ⏭
+                </button>
+                <select
+                  value={speed}
+                  onChange={(e) => setSpeed(Number(e.target.value))}
+                  className="bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200 px-1 py-0.5 cursor-pointer"
+                  title="Velocidad"
+                >
+                  {SPEEDS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}x
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Ejecución rápida: funciona aunque el panel de órdenes esté oculto */}
                             <div className="hidden md:flex md:absolute md:bottom-auto md:left-auto md:right-[10.5%] md:top-2 md:z-10 items-center justify-end gap-1">
                 {position ? (
