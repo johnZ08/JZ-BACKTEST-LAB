@@ -751,8 +751,10 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const cv = canvasRef.current;
     if (!cv || visibleCandles.length === 0) return;
     const ctx = cv.getContext('2d');
-    const W = cv.width;
-    const H = cv.height;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = cv.width / dpr;
+    const H = cv.height / dpr;
     const padR = 84;
     const padY = 16;
     const padB = 42;
