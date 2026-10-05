@@ -1201,7 +1201,6 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
             ? applyHandle(g.base, g.handle, viewXToTime(v, x), viewYToPrice(v, y))
             : moveShape(g.base, v, g.orig, x - g.start.x, y - g.start.y);
       }
-    }
     } else if (tool === 'cursor') {
       const list = drawingsRef.current;
       const cur = list.find((d) => d.id === selectedRef.current);
