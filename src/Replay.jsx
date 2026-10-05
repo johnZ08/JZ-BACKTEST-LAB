@@ -1682,7 +1682,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               </div>
             </div>
 
-            <div className="hidden md:flex flex-wrap items-center gap-1.5">
+            <div className="hidden">
               <button
                 onClick={() => setVisible(ZOOM_STEPS[Math.max(0, ZOOM_STEPS.indexOf(visible) - 1)])}
                 className={`${btn} bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}
@@ -1744,7 +1744,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               </select>
             </div>
 
-            <div className="hidden md:flex flex-wrap items-center gap-1.5">
+            <div className="hidden">
               <span className="text-[10px] font-mono text-slate-500 mr-1">Dibujo:</span>
               {[
                 ['cursor', 'Cursor'],
@@ -1803,7 +1803,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               ))}
             </div>
 
-            <p className="hidden md:block text-[10px] font-mono text-slate-500">
+            <p className="hidden">
               Con Cursor: clic para seleccionar, arrastra para mover, arrastra los puntos para editar, Supr para borrar.
               Con cualquier herramienta: mantén <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300">Shift</kbd> para ángulo recto (0°/45°/90°).
               Zoom: arrastra <span className="text-slate-300">horizontal</span> sobre el eje de tiempo (abajo) o <span className="text-slate-300">vertical</span> sobre el eje de precio (derecha).
