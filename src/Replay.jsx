@@ -1643,7 +1643,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
         <>
           {/* GRÁFICO */}
           <div className="flex-1 min-h-0 flex flex-col bg-slate-900 border border-slate-800 md:rounded-2xl p-0 md:p-4 gap-0 md:gap-3">
-            <div className="hidden md:flex flex-wrap items-center justify-between gap-2">
+            <div className="hidden">              
               <div className="flex flex-wrap gap-1.5">
                 {allowed.map((x) => (
                   <button
