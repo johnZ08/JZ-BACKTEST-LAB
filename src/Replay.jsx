@@ -476,7 +476,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     if (!wrap || !canvas || !overlay) return undefined;
     const update = () => {
       const r = wrap.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
+      const baseDpr = window.devicePixelRatio || 1;
+      const dpr = r.width > 700 ? Math.max(baseDpr, 2) : baseDpr;
       const w = Math.max(1, Math.round(r.width * dpr));
       const h = Math.max(1, Math.round(r.height * dpr));
       if (canvas.width !== w || canvas.height !== h) {
@@ -751,7 +752,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const cv = canvasRef.current;
     if (!cv || visibleCandles.length === 0) return;
     const ctx = cv.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = cv.width / cv.clientWidth;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const W = cv.width / dpr;
     const H = cv.height / dpr;
@@ -981,7 +982,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const v = viewRef.current;
     if (!cv || !v) return;
     const ctx = cv.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = cv.width / cv.clientWidth;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
     const h = hoverRef.current;
