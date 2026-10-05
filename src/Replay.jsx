@@ -1160,7 +1160,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       let t2 = viewXToTime(v, x);
       let p2 = viewYToPrice(v, y);
       // FIX ETAPA 1: Shift = snap a múltiplos de 45° (0°, 45°, 90°, ...)
-      if (e.shiftKey) {
+      if (e.shiftKey || angleLock) {
         const d = draftRef.current;
         const x1 = viewTimeToX(v, d.t1);
         const y1 = viewPriceToY(v, d.p1);
