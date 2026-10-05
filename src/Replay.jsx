@@ -1988,7 +1988,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="hidden">
               <button
                 onClick={() => setPlaying(!playing)}
                 disabled={atEnd}
