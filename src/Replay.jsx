@@ -1561,7 +1561,35 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                   Límite de pérdida diaria alcanzado.
                 </p>
               )}
-              
+                                      
+              <div className="border-t border-slate-800 pt-3 space-y-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">🎓 Challenge</p>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] font-mono text-slate-400 flex-1">Balance inicial</label>
+                  <input
+                    type="number"
+                    min="1000"
+                    step="1000"
+                    value={challengeInitial}
+                    onChange={(e) => setChallengeInitial(Number(e.target.value) || 25000)}
+                    disabled={challengeStatus === 'running'}
+                    className="w-24 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white font-mono text-right"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {}}
+                  disabled={challengeStatus === 'running'}
+                  className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer disabled:opacity-40"
+                >
+                  🎓 Iniciar Challenge Aleatorio
+                </button>
+
+                <p className="text-[11px] font-mono text-slate-500 text-center">
+                  Estado: <span className="text-slate-400">{challengeStatus === 'idle' ? 'Inactivo' : challengeStatus === 'running' ? 'En curso 🟢' : challengeStatus === 'passed' ? 'Superado 🏆' : 'Quemada ❌'}</span>
+                </p>
+              </div>
                 <div className="border-t border-slate-800 pt-3 space-y-2">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Precio actual</p>
                 <div className="flex items-center gap-2">
