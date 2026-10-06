@@ -2198,6 +2198,32 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                   </>
                 )}
               </div>
+              
+              {/* 🎓 HUD flotante del Challenge */}
+              {challengeStatus === 'running' && (
+                <div className="absolute bottom-2 left-2 z-10 bg-slate-900/90 backdrop-blur border border-emerald-500/40 rounded-lg px-2.5 py-1.5 shadow-lg text-[10px] font-mono text-slate-300 space-y-0.5 pointer-events-none select-none">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-400 font-bold">🎓 CHALLENGE</span>
+                    <span className="text-[9px] text-slate-500">
+                      {challengePhase === 'eval' ? 'Evaluación' : 'Fondeada'}
+                    </span>
+                  </div>
+                  <div className="text-white font-bold text-sm">
+                    ${challengeBalance.toFixed(2)}
+                  </div>
+                  <div className={challengeBalance - challengeInitial >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                    {challengeBalance - challengeInitial >= 0 ? '+' : ''}
+                    ${(challengeBalance - challengeInitial).toFixed(2)}
+                    {' '}
+                    ({((challengeBalance - challengeInitial) / challengeInitial * 100).toFixed(2)}%)
+                  </div>
+                  <div className="text-[9px] text-slate-500">
+                    Objetivo: {challengePhase === 'eval' ? '+6%' : '+4%'}
+                    {' '}(${(challengeInitial * (challengePhase === 'eval' ? 0.06 : 0.04)).toFixed(0)})
+                  </div>
+                </div>
+              )}
+
             </div>
 
             <div className="hidden">
