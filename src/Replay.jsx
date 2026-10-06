@@ -455,6 +455,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [editSl, setEditSl] = useState('');
   const [editTp, setEditTp] = useState('');
   const [position, setPosition] = useState(null);
+    // 🎓 Challenge Simulator
+  const [challengeStatus, setChallengeStatus] = useState('idle');
+  const [challengeInitial, setChallengeInitial] = useState(25000);
+  const [challengeBalance, setChallengeBalance] = useState(25000);
+  const [challengePhase, setChallengePhase] = useState('eval');
   const [sessionTrades, setSessionTrades] = useState([]);
   const [error, setError] = useState('');
 
