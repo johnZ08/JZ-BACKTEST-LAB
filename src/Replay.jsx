@@ -442,6 +442,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [panLock, setPanLock] = useState(false);
   const [angleLock, setAngleLock] = useState(false);
+  const [priceColor, setPriceColor] = useState('#0ea5e9');
+  const [priceOpacity, setPriceOpacity] = useState(1);
   const [sizeTick, setSizeTick] = useState(0);
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
   const [selectedId, setSelectedId] = useState(null);
@@ -921,12 +923,20 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       );
     }
     const lastC = vc[vc.length - 1].c;
-    hline(lastC, '#38bdf8', '');
-    ctx.fillStyle = '#0ea5e9';
-    ctx.fillRect(plotW + 2, y(lastC) - 9, padR - 4, 18);
+    hline(lastC, priceColor, '');
+    // FIX: recuadro de precio adaptativo (más chico en móvil) y personalizable
+    const boxH = isWide ? 18 : 13;
+    const boxFont = isWide ? 'bold 11px monospace' : 'bold 9px monospace';
+    const boxY = y(lastC) - boxH / 2;
+    ctx.globalAlpha = priceOpacity;
+    ctx.fillStyle = priceColor;
+    ctx.fillRect(plotW + 2, boxY, padR - 4, boxH);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = '#020617';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText(lastC.toFixed(2), plotW + 6, y(lastC) + 4);
+    ctx.font = boxFont;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lastC.toFixed(2), plotW + 6, y(lastC));
+    ctx.textBaseline = 'alphabetic';
 
     // 6) Eje de tiempo: hora y fecha (hora de NY convertida, o la hora tal cual viene en el CSV)
     const wallOf = (t) => (axisCsv ? t : fileToNy(t, tzMode));
