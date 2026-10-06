@@ -1272,7 +1272,12 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     }
     drawOverlay();
   };
-  const onPointerLeave = () => {
+   const onPointerLeave = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+      // En móvil, al soltar el dedo el crosshair se queda (comportamiento TradingView)
+      drawOverlay();
+      return;
+    }
     hoverRef.current = null;
     drawOverlay();
   };
@@ -2046,6 +2051,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 className="absolute inset-0 w-full h-full outline-none"
                 style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: 'none' }}
                 onPointerDown={onPointerDown}
+                onPointerEnter={onPointerMove}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
                 onPointerLeave={onPointerLeave}
