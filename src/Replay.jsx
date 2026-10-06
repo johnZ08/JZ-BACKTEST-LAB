@@ -747,15 +747,24 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     .filter((t) => t.dateISO === currentDay)
     .reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
   const limitHit = Number(dailyLimit) > 0 && dailyPnL <= -Number(dailyLimit);
-      // --- REGLA DEL 40%: Concentración del Beneficio ---
+        // --- REGLA DEL 40%: Concentración del Beneficio (SEGURA) ---
   const allTrades = [...savedTrades, ...sessionTrades];
-  const totalProfitTarget = Number(challengeConfig?.profitTarget) || 1000; // Ajusta si tu variable se llama diferente
+  
+  // Intentamos obtener el profit target de varias fuentes posibles
+  let totalProfitTarget = 1000; // Valor por defecto
+  if (typeof challengeConfig !== 'undefined' && challengeConfig) {
+    if (challengeConfig.profitTarget) {
+      totalProfitTarget = Number(challengeConfig.profitTarget) || 1000;
+    } else if (challengeConfig.target) {
+      totalProfitTarget = Number(challengeConfig.target) || 1000;
+    }
+  }
+  
   const sumWinningTrades = allTrades
     .filter(t => t.result === 'WIN')
     .reduce((acc, t) => acc + Math.max(0, t.pnlUSD || 0), 0);
   
   const profitPercentage = totalProfitTarget > 0 ? (sumWinningTrades / totalProfitTarget) * 100 : 0;
-  // La regla se activa si las ganancias acumuladas superan el 40% del objetivo
   const isAbove40PercentProfit = profitPercentage > 40;
 
   const applyLevels = () => {
