@@ -766,10 +766,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   
   const profitPercentage = totalProfitTarget > 0 ? (sumWinningTrades / totalProfitTarget) * 100 : 0;
   const isAbove40PercentProfit = profitPercentage > 40;
-  {/* BANNER DE ALERTA - REGLA DE CONSISTENCIA (40%) */}
-  {isAbove40PercentProfit && (
-
-  const applyLevels = () => {
+ 
+   const applyLevels = () => {
     const c = data[pos].c;
     const newSl = parseFloat(editSl);
     const newTp = parseFloat(editTp);
@@ -782,6 +780,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     setPosition({ ...position, sl: round2(newSl), tp: round2(newTp) });
     setError('');
   };
+ {/* BANNER DE ALERTA - REGLA DE CONSISTENCIA (40%) */}
+  {isAbove40PercentProfit && (
 
   const moveToBreakEven = () => {
     const c = data[pos].c;
