@@ -1420,6 +1420,39 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     return () => clearTimeout(id);
   }, [ready, pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts, contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv, priceColor, priceOpacity, bullColor, bearColor]);
 
+  // 🎓 Challenge: actualiza el balance cuando se cierra una operación
+  useEffect(() => {
+    if (challengeStatus !== 'running') return;
+    if (!sessionTrades.length) return;
+    const last = sessionTrades[sessionTrades.length - 1];
+    if (!last || last._challengeApplied) return;
+
+    const pnl = last.pnlUSD || 0;
+    const newBalance = challengeBalance + pnl;
+    setChallengeBalance(newBalance);
+
+    // Marcar la operación como ya aplicada (para no duplicar)
+    setSessionTrades((prev) =>
+      prev.map((t) => (t.id === last.id ? { ...t, _challengeApplied: true } : t))
+    );
+
+    // Evaluar fin del Challenge
+    const profit = newBalance - challengeInitial;
+    const target = challengeInitial * (challengePhase === 'eval' ? 0.06 : 0.04);
+
+    if (profit >= target) {
+      setChallengeStatus('passed');
+    } else {
+      // Pérdida diaria EOD: suma de pnlUSD de trades del mismo día
+      const day = last.dateISO;
+      const dayPnL = sessionTrades
+        .filter((t) => t.dateISO === day)
+        .reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
+      if (dayPnL <= -(challengeInitial * 0.04)) {
+        setChallengeStatus('blown');
+      }
+    }
+  }, [sessionTrades, challengeStatus, challengeBalance, challengeInitial, challengePhase]);
     const forgetSaved = () => {
     const doForget = async () => {
       try {
@@ -2183,14 +2216,14 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                     </span>
                     <button
                       onClick={() => openPosition('SELL')}
-                      disabled={atEnd || limitHit}
+                      disabled={atEnd || limitHit || challengeStatus === 'blown'}
                       className={`${btn} bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
                     >
                       Vender
                     </button>
                     <button
                       onClick={() => openPosition('BUY')}
-                      disabled={atEnd || limitHit}
+                      disabled={atEnd || limitHit || challengeStatus === 'blown'}
                       className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
                     >
                       Comprar
@@ -2293,14 +2326,14 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 <>
                   <button
                     onClick={() => openPosition('SELL')}
-                    disabled={atEnd || limitHit}
+                    disabled={atEnd || limitHit || challengeStatus === 'blown'}
                     className="flex-1 py-3 rounded-xl bg-rose-500 text-slate-950 font-bold text-sm font-mono cursor-pointer disabled:opacity-40"
                   >
                     Vender
                   </button>
                   <button
                     onClick={() => openPosition('BUY')}
-                    disabled={atEnd || limitHit}
+                    disabled={atEnd || limitHit || challengeStatus === 'blown'}
                     className="flex-1 py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm font-mono cursor-pointer disabled:opacity-40"
                   >
                     Comprar
@@ -2398,14 +2431,14 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               <div className="flex gap-2">
                 <button
                   onClick={() => openPosition('BUY')}
-                  disabled={atEnd || limitHit}
+                  disabled={atEnd || limitHit || challengeStatus === 'blown'}
                   className={`${btn} flex-1 bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
                 >
                   Comprar (BUY)
                 </button>
                 <button
                   onClick={() => openPosition('SELL')}
-                  disabled={atEnd || limitHit}
+                  disabled={atEnd || limitHit || challengeStatus === 'blown'}
                   className={`${btn} flex-1 bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
                 >
                   Vender (SELL)
