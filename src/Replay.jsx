@@ -861,7 +861,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     // 2) Cuadrícula y escala de precios con pasos "redondos"
     ctx.lineWidth = 1;
     const isWide = cv.clientWidth > 700;
-    ctx.font = `${isWide ? 11 : 10}px monospace`;
+    ctx.font = `${isWide ? 11 : 8}px monospace`;
     const rawStep = (hi - lo) / 6;
     const mag = 10 ** Math.floor(Math.log10(rawStep));
     const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((x) => x >= rawStep);
@@ -938,7 +938,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     ctx.stroke();
     const minPerCandle = tf / 60;
     const interval = [1, 5, 15, 30, 60, 120, 240, 360, 720, 1440].find((m) => (m / minPerCandle) * cw >= 70) || 1440;
-    ctx.font = `${isWide ? 10 : 9}px monospace`;
+    ctx.font = `${isWide ? 10 : 7}px monospace`;
     let prevBucket = null;
     let prevDay = null;
     let dateShown = false;
