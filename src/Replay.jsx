@@ -477,7 +477,6 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const update = () => {
       const r = wrap.getBoundingClientRect();
       const baseDpr = window.devicePixelRatio || 1;
-      const baseDpr = window.devicePixelRatio || 1;
       const dpr = baseDpr < 2 ? 2 : baseDpr;
       const w = Math.max(1, Math.round(r.width * dpr));
       const h = Math.max(1, Math.round(r.height * dpr));
