@@ -444,6 +444,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [angleLock, setAngleLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
   const [priceOpacity, setPriceOpacity] = useState(1);
+  const [bullColor, setBullColor] = useState('#10b981');
+  const [bearColor, setBearColor] = useState('#f43f5e');
   const [sizeTick, setSizeTick] = useState(0);
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
   const [selectedId, setSelectedId] = useState(null);
@@ -880,7 +882,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     // 3) Velas
     vc.forEach((c, i) => {
       const x = left + i * cw + cw / 2;
-      const color = c.c >= c.o ? '#10b981' : '#f43f5e';
+      const color = c.c >= c.o ? bullColor : bearColor;
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
       ctx.lineWidth = 0.8;
@@ -1310,7 +1312,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
           visible: setVisible, slPts: setSlPts, tpPts: setTpPts, contracts: setContracts,
           pointValue: setPointValue, commission: setCommission, dailyLimit: setDailyLimit,
           session: setSession, speed: setSpeed, showSessions: setShowSessions,
-          panelOpen: setPanelOpen, axisCsv: setAxisCsv
+            panelOpen: setPanelOpen, axisCsv: setAxisCsv, priceColor: setPriceColor, priceOpacity: setPriceOpacity, bullColor: setBullColor, bearColor: setBearColor
         };
         Object.entries(setters).forEach(([k, fn]) => {
           if (st[k] !== undefined && st[k] !== null) fn(st[k]);
@@ -1366,7 +1368,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
           STATE_KEY,
           JSON.stringify({
             pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts,
-            contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv
+            contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv, priceColor, priceOpacity, bullColor, bearColor
           })
         );
       } catch {
@@ -1379,7 +1381,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     }
     const id = setTimeout(write, 300);
     return () => clearTimeout(id);
-  }, [ready, pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts, contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv]);
+  }, [ready, pos, tf, tzMode, drawings, sessionTrades, position, visible, slPts, tpPts, contracts, pointValue, commission, dailyLimit, session, speed, showSessions, panelOpen, axisCsv, priceColor, priceOpacity, bullColor, bearColor]);
 
     const forgetSaved = () => {
     const doForget = async () => {
@@ -1547,7 +1549,56 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                   Límite de pérdida diaria alcanzado.
                 </p>
               )}
-
+              
+              <div className="border-t border-slate-800 pt-3 space-y-2">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Precio actual</p>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] font-mono text-slate-400 flex-1">Color</label>
+                  <input
+                    type="color"
+                    value={priceColor}
+                    onChange={(e) => setPriceColor(e.target.value)}
+                    className="w-10 h-8 rounded border border-slate-700 cursor-pointer bg-slate-950"
+                  />
+                </div>
+              </div>
+                                      
+              <div className="border-t border-slate-800 pt-3 space-y-2">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Velas</p>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] font-mono text-slate-400 flex-1">Alcista (sube)</label>
+                  <input
+                    type="color"
+                    value={bullColor}
+                    onChange={(e) => setBullColor(e.target.value)}
+                    className="w-10 h-8 rounded border border-slate-700 cursor-pointer bg-slate-950"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] font-mono text-slate-400 flex-1">Bajista (baja)</label>
+                  <input
+                    type="color"
+                    value={bearColor}
+                    onChange={(e) => setBearColor(e.target.value)}
+                    className="w-10 h-8 rounded border border-slate-700 cursor-pointer bg-slate-950"
+                  />
+                </div>
+              </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-mono text-slate-400">Opacidad</label>
+                    <span className="text-[11px] font-mono text-slate-500">{Math.round(priceOpacity * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1"
+                    step="0.05"
+                    value={priceOpacity}
+                    onChange={(e) => setPriceOpacity(Number(e.target.value))}
+                    className="w-full accent-emerald-500 h-1 cursor-pointer"
+                  />
+                </div>
+              </div>
               {position ? (
                 <div className="space-y-2">
                   <div className="text-xs font-mono bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 space-y-1">
