@@ -751,12 +751,12 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const allTrades = [...savedTrades, ...sessionTrades];
   
   // Intentamos obtener el profit target de varias fuentes posibles
-  let totalProfitTarget = 1000; // Valor por defecto
+  let totalProfitTarget = 1500; // Valor por defecto
   if (typeof challengeConfig !== 'undefined' && challengeConfig) {
     if (challengeConfig.profitTarget) {
-      totalProfitTarget = Number(challengeConfig.profitTarget) || 1000;
+      totalProfitTarget = Number(challengeConfig.profitTarget) || 1500;
     } else if (challengeConfig.target) {
-      totalProfitTarget = Number(challengeConfig.target) || 1000;
+      totalProfitTarget = Number(challengeConfig.target) || 1500;
     }
   }
   
@@ -766,6 +766,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   
   const profitPercentage = totalProfitTarget > 0 ? (sumWinningTrades / totalProfitTarget) * 100 : 0;
   const isAbove40PercentProfit = profitPercentage > 40;
+  {/* BANNER DE ALERTA - REGLA DE CONSISTENCIA (40%) */}
+  {isAbove40PercentProfit && (
 
   const applyLevels = () => {
     const c = data[pos].c;
