@@ -1090,7 +1090,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       return;
     }
     // FIX PANEO LIBRE: arrastrar dentro del canvas mueve las velas (si el candado está abierto)
-    if (tool === 'cursor' && !panLock && x <= v.W - v.padR && y <= v.H - v.padB) {
+    if (tool === 'cursor' && !panLock && (axisLock || (x <= v.W - v.padR && y <= v.H - v.padB))) {
       const list = drawingsRef.current;
       const cur = list.find((d) => d.id === selectedRef.current);
       const overDrawing =
