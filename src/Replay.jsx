@@ -747,6 +747,13 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     .filter((t) => t.dateISO === currentDay)
     .reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
   const limitHit = Number(dailyLimit) > 0 && dailyPnL <= -Number(dailyLimit);
+    // --- REGLA DEL 40%: Cálculo de Win Rate ---
+  const allTrades = [...savedTrades, ...sessionTrades];
+  const totalTrades = allTrades.length;
+  const winTrades = allTrades.filter(t => t.result === 'WIN').length;
+  const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+  // La regla se activa si hay al menos 5 trades y el win rate es menor al 40%
+  const isBelow40Percent = totalTrades >= 5 && winRate < 40;
 
   const applyLevels = () => {
     const c = data[pos].c;
@@ -1615,6 +1622,13 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 {CONTRACT_SYMBOL} · Riesgo ${riskUSD.toFixed(2)} · Objetivo ${rewardUSD.toFixed(2)} · P&L día {dailyPnL >= 0 ? '+' : '-'}${Math.abs(dailyPnL).toFixed(2)}
               </p>
 
+                        {/* BANNER REGLA DEL 40% */}
+          {isBelow40Percent && (
+            <div className="bg-red-600 text-white px-3 py-1.5 rounded-t-lg text-xs font-bold flex items-center justify-between shadow-lg animate-pulse">
+              <span>⚠️ REGLA 40%: Win Rate bajo ({winRate.toFixed(1)}%)</span>
+              <span className="text-[10px] opacity-80">Considera parar</span>
+            </div>
+          )}                        
               {limitHit && (
                 <p className="text-xs text-rose-400 font-mono">
                   Límite de pérdida diaria alcanzado.
