@@ -2025,6 +2025,17 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 >
                   🎯
                 </button>
+                                 <button
+                  onClick={() => setPanLock((p) => !p)}
+                  title={panLock ? 'Paneo bloqueado (solo crosshair)' : 'Paneo libre activo'}
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                    panLock
+                      ? 'bg-rose-500 text-slate-950 border-rose-400 font-bold'
+                      : 'bg-slate-950 text-slate-300 border-slate-800'
+                  }`}
+                >
+                  {panLock ? '🔒' : '🔓'}
+                </button>
                 <button
                   onClick={deleteSelected}
                   disabled={!selectedId}
