@@ -988,8 +988,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       ctx.fillRect(x - 1, plotH, 2, 8);
       ctx.fillText(`${ses.label} ${ses.start}`, Math.min(x + 3, plotW - 70), H - 4);
     });
-}, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange, sizeTick]);
-
+  }, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange, sizeTick, priceColor, priceOpacity, bullColor, bearColor]);
   // Capa interactiva (cruz, dibujo en curso, edición): se pinta sin re-renderizar React
   const drawOverlay = () => {
     const cv = overlayRef.current;
