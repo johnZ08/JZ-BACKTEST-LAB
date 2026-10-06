@@ -477,7 +477,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const update = () => {
       const r = wrap.getBoundingClientRect();
       const baseDpr = window.devicePixelRatio || 1;
-      const dpr = r.width > 700 ? Math.max(baseDpr, 2) : baseDpr;
+      const baseDpr = window.devicePixelRatio || 1;
+      const dpr = baseDpr < 2 ? 2 : baseDpr;
       const w = Math.max(1, Math.round(r.width * dpr));
       const h = Math.max(1, Math.round(r.height * dpr));
       if (canvas.width !== w || canvas.height !== h) {
@@ -880,6 +881,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       const color = c.c >= c.o ? '#10b981' : '#f43f5e';
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
       ctx.moveTo(x, y(c.h));
       ctx.lineTo(x, y(c.l));
