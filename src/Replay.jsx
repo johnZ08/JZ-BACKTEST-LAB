@@ -442,6 +442,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [panLock, setPanLock] = useState(false);
   const [angleLock, setAngleLock] = useState(false);
+  const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
   const [priceOpacity, setPriceOpacity] = useState(1);
   const [bullColor, setBullColor] = useState('#10b981');
@@ -1075,8 +1076,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
     // FIX ETAPA 2: arrastrar sobre el eje de precio (derecha) o el de tiempo (abajo) hace zoom
-    const onPriceAxis = x > v.W - v.padR;
-    const onTimeAxis = y > v.H - v.padB;
+    const onPriceAxis = !axisLock && x > v.W - v.padR;
+    const onTimeAxis = !axisLock && y > v.H - v.padB;
     if (onPriceAxis || onTimeAxis) {
       e.currentTarget.setPointerCapture(e.pointerId);
       axisDragRef.current = {
@@ -2007,6 +2008,17 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                   }`}
                 >
                   📐
+                </button>
+                <button
+                  onClick={() => setAxisLock((a) => !a)}
+                  title={axisLock ? 'Ejes bloqueados (solo panea)' : 'Ejes activos (zoom disponible)'}
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
+                    axisLock
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
+                      : 'bg-slate-950 text-slate-300 border-slate-800'
+                  }`}
+                >
+                  🎯
                 </button>
                 <button
                   onClick={deleteSelected}
