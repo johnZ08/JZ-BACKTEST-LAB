@@ -577,6 +577,31 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       .then(() => navigator.storage?.persist?.())
       .catch(() => setError('No se pudo guardar el CSV en el navegador (¿poco espacio?).'));
   };
+    // 🎓 Challenge: inicia un challenge aleatorio desde una posición al azar
+  const startChallenge = () => {
+    if (!data.length) {
+      setError('Primero carga un CSV para iniciar el Challenge.');
+      return;
+    }
+    if (position) {
+      setError('Cierra la operación abierta antes de iniciar un Challenge.');
+      return;
+    }
+
+    // Salto aleatorio: mínimo 300 velas de contexto inicial,
+    // dejando al menos 500 velas para operar cómodamente
+    const MIN_START = 300;
+    const MIN_REMAINING = 500;
+    const maxStart = Math.max(MIN_START + 1, data.length - MIN_REMAINING);
+    const randomPos = MIN_START + Math.floor(Math.random() * (maxStart - MIN_START));
+
+    setPos(randomPos);
+    setPan(0);
+    setYRange(null);
+    setChallengeBalance(challengeInitial);
+    setChallengeStatus('running');
+    setError('');
+  };
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -1579,8 +1604,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 </div>
 
                 <button
-                  onClick={() => {}}
-                  disabled={challengeStatus === 'running'}
+                  onClick={startChallenge}
+                  disabled={challengeStatus === 'running' || !!position}
                   className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer disabled:opacity-40"
                 >
                   🎓 Iniciar Challenge Aleatorio
