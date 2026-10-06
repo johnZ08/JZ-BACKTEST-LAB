@@ -1165,6 +1165,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       const pricePerPx = (a.startYRange.hi - a.startYRange.lo) / (v.H - v.padY - v.padB);
       const shift = dy * pricePerPx;
       setYRange({ lo: a.startYRange.lo + shift, hi: a.startYRange.hi + shift });
+      drawOverlay();
       return;
     }
 
@@ -1194,6 +1195,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
           });
         }
       }
+      drawOverlay();
       return;
     }
 
