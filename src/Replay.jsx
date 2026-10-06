@@ -782,8 +782,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   };
  {/* BANNER DE ALERTA - REGLA DE CONSISTENCIA (40%) */}
   {isAbove40PercentProfit && (
-
-  const moveToBreakEven = () => {
+    const moveToBreakEven = () => {
     const c = data[pos].c;
     const inProfit = position.type === 'BUY' ? c > position.entry : c < position.entry;
     if (!inProfit) {
