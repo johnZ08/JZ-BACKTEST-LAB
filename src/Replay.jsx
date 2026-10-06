@@ -1000,7 +1000,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
     const h = hoverRef.current;
-    if (h && h.x <= v.W - v.padR && h.y <= v.H - v.padB) {
+    if (h) {
       ctx.strokeStyle = 'rgba(148,163,184,0.45)';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 4]);
