@@ -747,13 +747,16 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     .filter((t) => t.dateISO === currentDay)
     .reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
   const limitHit = Number(dailyLimit) > 0 && dailyPnL <= -Number(dailyLimit);
-    // --- REGLA DEL 40%: Cálculo de Win Rate ---
+      // --- REGLA DEL 40%: Concentración del Beneficio ---
   const allTrades = [...savedTrades, ...sessionTrades];
-  const totalTrades = allTrades.length;
-  const winTrades = allTrades.filter(t => t.result === 'WIN').length;
-  const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
-  // La regla se activa si hay al menos 5 trades y el win rate es menor al 40%
-  const isBelow40Percent = totalTrades >= 5 && winRate < 40;
+  const totalProfitTarget = Number(challengeConfig?.profitTarget) || 1000; // Ajusta si tu variable se llama diferente
+  const sumWinningTrades = allTrades
+    .filter(t => t.result === 'WIN')
+    .reduce((acc, t) => acc + Math.max(0, t.pnlUSD || 0), 0);
+  
+  const profitPercentage = totalProfitTarget > 0 ? (sumWinningTrades / totalProfitTarget) * 100 : 0;
+  // La regla se activa si las ganancias acumuladas superan el 40% del objetivo
+  const isAbove40PercentProfit = profitPercentage > 40;
 
   const applyLevels = () => {
     const c = data[pos].c;
@@ -786,6 +789,18 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     closePosition(r > 0 ? 'WIN' : r < 0 ? 'LOSS' : 'BE', r, pos);
   };
 
+    const handleClearSession = () => {
+    if (sessionTrades.length === 0) {
+      setError('No hay trades de sesión para vaciar.');
+      return;
+    }
+    if (window.confirm(`¿Seguro que quieres vaciar ${sessionTrades.length} trades no guardados? Esta acción no se puede deshacer.`)) {
+      setSessionTrades([]);
+      setError('');
+      // Opcional: Si quieres limpiar también la posición abierta actual
+      setPosition(null);
+    }
+  };
   const handleSave = () => {
     onSave(sessionTrades, () => setSessionTrades([])); // se vacía solo si autorizas con el PIN
   };
@@ -1622,13 +1637,13 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 {CONTRACT_SYMBOL} · Riesgo ${riskUSD.toFixed(2)} · Objetivo ${rewardUSD.toFixed(2)} · P&L día {dailyPnL >= 0 ? '+' : '-'}${Math.abs(dailyPnL).toFixed(2)}
               </p>
 
-                        {/* BANNER REGLA DEL 40% */}
-          {isBelow40Percent && (
-            <div className="bg-red-600 text-white px-3 py-1.5 rounded-t-lg text-xs font-bold flex items-center justify-between shadow-lg animate-pulse">
-              <span>⚠️ REGLA 40%: Win Rate bajo ({winRate.toFixed(1)}%)</span>
-              <span className="text-[10px] opacity-80">Considera parar</span>
+                    {/* BANNER REGLA DEL 40%: CONCENTRACIÓN DE GANANCIAS */}
+          {isAbove40PercentProfit && (
+            <div className="bg-amber-500 text-white px-3 py-1.5 rounded-t-lg text-xs font-bold flex items-center justify-between shadow-lg animate-pulse">
+              <span>⚠️ REGLA 40%: Ganancias concentradas ({profitPercentage.toFixed(1)}%)</span>
+              <span className="text-[10px] opacity-80">Gestión riesgosa</span>
             </div>
-          )}                        
+          )}    
               {limitHit && (
                 <p className="text-xs text-rose-400 font-mono">
                   Límite de pérdida diaria alcanzado.
@@ -1813,6 +1828,13 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 >
                   Guardar en registro 🔒
                 </button>
+                          <button
+            onClick={handleClearSession}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+            title="Vaciar trades de sesión sin guardar"
+          >
+            🗑️ Vaciar
+          </button>
                 <ul className="space-y-1 text-[11px] font-mono">
                   {sessionTrades.map((t) => (
                     <li key={t.id} className="flex justify-between text-slate-400">
