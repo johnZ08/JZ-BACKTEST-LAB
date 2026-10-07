@@ -1685,8 +1685,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                   🎓 Iniciar Challenge Aleatorio
                 </button>
 
-                <p className="text-[11px] font-mono text-slate-500 text-center">
-                  <p className="text-[11px] font-mono text-slate-500 text-center">
+             <p className="text-[11px] font-mono text-slate-500 text-center">
                   Estado: <span className="text-slate-400">{challengeStatus === 'idle' ? 'Inactivo' : challengeStatus === 'running' ? 'En curso 🟢' : challengeStatus === 'passed' ? 'Superado 🏆' : 'Quemada ❌'}</span>
                 </p>
 
