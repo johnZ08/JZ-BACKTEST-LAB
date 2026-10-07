@@ -1125,15 +1125,28 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     drawOverlay();
   };
 
-  const eventPoint = (e) => {
+const eventPoint = (e) => {
     const cv = overlayRef.current;
+    if (!cv) return { x: 0, y: 0 };
     const r = cv.getBoundingClientRect();
+    // Escala precisa de coordenadas considerando la relación real entre bitmap y píxeles CSS
+    const scaleX = r.width > 0 ? cv.width / r.width : 1;
+    const scaleY = r.height > 0 ? cv.height / r.height : 1;
+    const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
+    
+    // Normalizamos a las coordenadas lógicas esperadas por las funciones de dibujo
     const dpr = window.devicePixelRatio || 1;
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    const rawX = (clientX - r.left) * scaleX;
+    const rawY = (clientY - r.top) * scaleY;
+    return { x: rawX / dpr, y: rawY / dpr };
   };
    const onPointerDown = (e) => {
     const v = viewRef.current;
     if (!v) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
     e.currentTarget.focus();
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
@@ -1315,7 +1328,12 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     }
     drawOverlay();
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e) => {
+    try {
+      if (e?.pointerId && e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch (_) {}
     const d = draftRef.current;
     const g = dragRef.current;
     draftRef.current = null;
