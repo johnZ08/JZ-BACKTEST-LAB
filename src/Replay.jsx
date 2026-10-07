@@ -1645,21 +1645,6 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               <p className="text-[10px] font-mono text-slate-500">
                 {CONTRACT_SYMBOL} · Riesgo ${riskUSD.toFixed(2)} · Objetivo ${rewardUSD.toFixed(2)} · P&L día {dailyPnL >= 0 ? '+' : '-'}${Math.abs(dailyPnL).toFixed(2)}
               </p>
-
-                   {/* BANNER REGLA DE CONSISTENCIA (40%) */}
-      {isAbove40PercentProfit && (
-        <div className="bg-amber-500/20 border-b border-amber-500/40 text-amber-300 px-4 py-2 text-xs md:text-sm font-semibold flex items-center justify-between z-50 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-base">⚠️</span>
-            <span>
-              <strong>Alerta de Consistencia:</strong> Un solo trade supera el 40% del objetivo de ganancias permitido ($1,500).
-            </span>
-          </div>
-          <span className="text-[10px] bg-amber-500/30 px-2 py-0.5 rounded border border-amber-500/50 uppercase tracking-wider">
-            Regla Violada
-          </span>
-        </div>
-      )}
                                       
               <div className="border-t border-slate-800 pt-3 space-y-3">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">🎓 Challenge</p>
