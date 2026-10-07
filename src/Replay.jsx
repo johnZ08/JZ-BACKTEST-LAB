@@ -1861,6 +1861,20 @@ const onPointerDown = (e) => {
              {/* MÓDULO UNIFICADO: PERSONALIZACIÓN VISUAL */}
               <div className="border-t border-slate-800 pt-3">
                 <details className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
+                  {/* TOGGLE ZONAS DE SESIONES */}
+              <div className="border-t border-slate-800 pt-3">
+                <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 select-none">
+                  <span className="text-[11px] font-mono text-slate-300 flex items-center gap-1.5 font-semibold">
+                    🌐 Zonas de Sesión (Asia/LDN/NY)
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(showSessions)}
+                    onChange={(e) => setShowSessions(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-700 bg-slate-900 accent-emerald-500 cursor-pointer"
+                  />
+                </label>
+              </div>
                   <summary className="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-mono font-bold text-slate-300 hover:text-white">
                     <span className="flex items-center gap-1.5">
                       🎨 Personalización Visual
