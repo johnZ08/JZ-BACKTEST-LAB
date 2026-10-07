@@ -758,22 +758,21 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
         // --- REGLA DEL 40%: Concentración del Beneficio (SEGURA) ---
   const allTrades = [...savedTrades, ...sessionTrades];
   
-  // Intentamos obtener el profit target de varias fuentes posibles
-  let totalProfitTarget = 1500; // Valor por defecto
-  if (typeof challengeConfig !== 'undefined' && challengeConfig) {
-    if (challengeConfig.profitTarget) {
-      totalProfitTarget = Number(challengeConfig.profitTarget) || 1500;
-    } else if (challengeConfig.target) {
-      totalProfitTarget = Number(challengeConfig.target) || 1500;
-    }
-  }
-  
-  const sumWinningTrades = allTrades
-    .filter(t => t.result === 'WIN')
-    .reduce((acc, t) => acc + Math.max(0, t.pnlUSD || 0), 0);
-  
-  const profitPercentage = totalProfitTarget > 0 ? (sumWinningTrades / totalProfitTarget) * 100 : 0;
-  const isAbove40PercentProfit = profitPercentage > 40;
+  // REGLA DE CONSISTENCIA (40%): Ningún trade individual puede superar el 40% del objetivo de ganancia ($600 sobre $1,500)
+  const challengeTargetProfit = (typeof challengeInitial !== 'undefined' && challengeInitial > 0)
+    ? challengeInitial * (challengePhase === 'eval' ? 0.06 : 0.04)
+    : 1500;
+  const maxAllowedSingleTradeProfit = challengeTargetProfit * 0.40;
+
+  // Evalúa tanto los trades de la sesión en curso como allTrades si existen
+  const currentTradesList = (typeof sessionTrades !== 'undefined' && sessionTrades.length > 0)
+    ? sessionTrades
+    : (typeof allTrades !== 'undefined' ? allTrades : []);
+
+  // Verifica si al menos UN trade ganador superó el 40% permitido
+  const isAbove40PercentProfit = currentTradesList.some(
+    (t) => (Number(t.pnlUSD) || 0) > maxAllowedSingleTradeProfit
+  );
  
    const applyLevels = () => {
     const c = data[pos].c;
