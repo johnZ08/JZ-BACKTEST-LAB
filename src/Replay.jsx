@@ -1141,6 +1141,15 @@ const eventPoint = (e) => {
     const cv = overlayRef.current;
     if (!cv) return { x: 0, y: 0 };
     const r = cv.getBoundingClientRect();
+    const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
+    
+    // Coordenadas CSS exactas correspondientes al sistema de coordenadas de la vista
+    return {
+      x: clientX - r.left,
+      y: clientY - r.top
+    };
+  };
     // Escala precisa de coordenadas considerando la relación real entre bitmap y píxeles CSS
     const scaleX = r.width > 0 ? cv.width / r.width : 1;
     const scaleY = r.height > 0 ? cv.height / r.height : 1;
