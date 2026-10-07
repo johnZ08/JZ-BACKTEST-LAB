@@ -453,6 +453,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [priceColor, setPriceColor] = useState('#0ea5e9');
   const [tpColor, setTpColor] = useState('#10b981'); // Color Take Profit / Ganancia
   const [slColor, setSlColor] = useState('#f43f5e'); // Color Stop Loss / Pérdida
+  const [buyBtnColor, setBuyBtnColor] = useState('#10b981'); // Color botón Comprar
+  const [sellBtnColor, setSellBtnColor] = useState('#f43f5e'); // Color botón Vender
   const [priceOpacity, setPriceOpacity] = useState(1);
   const [bullColor, setBullColor] = useState('#10b981');
   const [bearColor, setBearColor] = useState('#f43f5e');
@@ -1839,55 +1841,7 @@ const onPointerDown = (e) => {
               </div>
 
               <div className="border-t border-slate-800 pt-3 space-y-2">
-                {/* Personalización Pines TP / SL */}
-                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Pines de Posición</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded border border-slate-800">
-                    <input
-                      type="color"
-                      value={tpColor}
-                      onChange={(e) => setTpColor(e.target.value)}
-                      className="w-7 h-7 rounded border border-slate-700 cursor-pointer bg-transparent"
-                    />
-                    <label className="text-[10px] font-mono text-slate-400">TP (Win)</label>
-                  </div>
-                  <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded border border-slate-800">
-                    <input
-                      type="color"
-                      value={slColor}
-                      onChange={(e) => setSlColor(e.target.value)}
-                      className="w-7 h-7 rounded border border-slate-700 cursor-pointer bg-transparent"
-                    />
-                    <label className="text-[10px] font-mono text-slate-400">SL (Loss)</label>
-                  </div>
-                </div>
-                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Precio actual</p>
-                <div className="flex items-center gap-2">
-                  <label className="text-[11px] font-mono text-slate-400 flex-1">Color</label>
-                  <input
-                    type="color"
-                    value={priceColor}
-                    onChange={(e) => setPriceColor(e.target.value)}
-                    className="w-10 h-8 rounded border border-slate-700 cursor-pointer bg-slate-950"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-mono text-slate-400">Opacidad</label>
-                    <span className="text-[11px] font-mono text-slate-500">{Math.round(priceOpacity * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="1"
-                    step="0.05"
-                    value={priceOpacity}
-                    onChange={(e) => setPriceOpacity(Number(e.target.value))}
-                    className="w-full accent-emerald-500 h-1 cursor-pointer"
-                  />
-                </div>
-              </div>
-
+          
              {/* MÓDULO UNIFICADO: PERSONALIZACIÓN VISUAL */}
               <div className="border-t border-slate-800 pt-3">
                 <details className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
@@ -1951,6 +1905,30 @@ const onPointerDown = (e) => {
                       </div>
                     </div>
 
+                    {/* Sección: Botones de Operación */}
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-slate-500 font-mono mb-1.5">Botones de Orden</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800">
+                          <span className="text-[10px] font-mono text-slate-400">Comprar</span>
+                          <input
+                            type="color"
+                            value={buyBtnColor}
+                            onChange={(e) => setBuyBtnColor(e.target.value)}
+                            className="w-6 h-6 rounded border border-slate-700 cursor-pointer bg-transparent"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800">
+                          <span className="text-[10px] font-mono text-slate-400">Vender</span>
+                          <input
+                            type="color"
+                            value={sellBtnColor}
+                            onChange={(e) => setSellBtnColor(e.target.value)}
+                            className="w-6 h-6 rounded border border-slate-700 cursor-pointer bg-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
                     {/* Sección 3: Precio Actual */}
                     <div className="pt-1 border-t border-slate-800/40">
                       <p className="text-[9px] uppercase tracking-wider text-slate-500 font-mono mb-1.5">Línea de Precio</p>
@@ -2019,14 +1997,16 @@ const onPointerDown = (e) => {
                  <button
                     onClick={() => { openPosition('SELL'); setMobileMenuOpen(false); }}
                     disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
-                    className={`${btn} flex-1 bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
+                   style={{ backgroundColor: sellBtnColor, borderColor: sellBtnColor }}
+className={`${btn} flex-1 text-slate-950 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     Vender
                   </button>
                   <button
                     onClick={() => { openPosition('BUY'); setMobileMenuOpen(false); }}
                     disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
-                    className={`${btn} flex-1 bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
+                   style={{ backgroundColor: buyBtnColor, borderColor: buyBtnColor }}
+className={`${btn} flex-1 text-slate-950 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     Comprar
                   </button>
