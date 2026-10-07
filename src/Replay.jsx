@@ -2567,8 +2567,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
               </ul>
             </div>
           )}
-        </>
-      )}
-    </div>
+      </div>
+    );
+}iv>
   );
 }
