@@ -693,8 +693,25 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     let p = pos;
     for (let k = 0; k < n && p < data.length - 1; k++) {
       p++;
-      if (position) {
+     if (position) {
         const c = data[p];
+
+        // REGLA INSTITUCIONAL: Cierre forzado 10 min antes del fin de mercado (15:50 NY en futuros)
+        const candleDate = new Date((axisCsv ? c.t : fileToNy(c.t, tzMode)) * 1000);
+        const candleHour = candleDate.getUTCHours();
+        const candleMin = candleDate.getUTCMinutes();
+        const isForceCloseTime = (candleHour === 15 && candleMin >= 50) || (candleHour === 16 && candleMin === 0);
+
+        if (isForceCloseTime) {
+          const dir = position.type === 'BUY' ? 1 : -1;
+          const r = (dir * (c.c - position.entry)) / position.risk;
+          closePosition(r > 0 ? 'WIN' : r < 0 ? 'LOSS' : 'BE', r, p);
+          setPos(p);
+          setPlaying(false);
+          setError('⏱️ Posición cerrada automáticamente (Regla institucional: 10 min antes del cierre de mercado).');
+          return;
+        }
+
         const slHit = position.type === 'BUY' ? c.l <= position.sl : c.h >= position.sl;
         const tpHit = position.type === 'BUY' ? c.h >= position.tp : c.l <= position.tp;
         if (slHit || tpHit) {
