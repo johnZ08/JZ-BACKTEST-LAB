@@ -259,7 +259,7 @@ const drawShape = (ctx, v, d, alpha = 1) => {
   ctx.rect(0, 0, v.W - v.padR, v.H - v.padB);
   ctx.clip();
   ctx.globalAlpha = alpha;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1; // Trazo fino estilizado y proporcional a las velas
   if (d.type === 'line') {
     ctx.strokeStyle = '#e2e8f0';
     ctx.beginPath();
@@ -1102,10 +1102,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       const entries = Object.entries(anchorsOf(v, sel));
       entries.forEach(([key, [x, y]]) => {
         const isMid = key.startsWith('m_');
-        const r = isMid ? 3 : 4;
+        // Manijas más sutiles y proporcionadas con las velas
+        const r = isMid ? 2 : 2.5;
         ctx.fillStyle = '#0f172a';
-        ctx.strokeStyle = isMid ? '#94a3b8' : '#e2e8f0';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = isMid ? '#64748b' : '#38bdf8'; // Borde celeste sutil para ubicar rápido el punto
+        ctx.lineWidth = 1; // Trazo fino estético
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
