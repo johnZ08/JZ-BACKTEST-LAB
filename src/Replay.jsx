@@ -1840,7 +1840,7 @@ const onPointerDown = (e) => {
                 </div>
               </div>
 
-              <div className="border-t border-slate-800 pt-3 space-y-2">
+              
           
              {/* MÓDULO UNIFICADO: PERSONALIZACIÓN VISUAL */}
               <div className="border-t border-slate-800 pt-3">
