@@ -451,6 +451,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [angleLock, setAngleLock] = useState(false);
   const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
+  const [tpColor, setTpColor] = useState('#10b981'); // Color Take Profit / Ganancia
+  const [slColor, setSlColor] = useState('#f43f5e'); // Color Stop Loss / Pérdida
   const [priceOpacity, setPriceOpacity] = useState(1);
   const [bullColor, setBullColor] = useState('#10b981');
   const [bearColor, setBearColor] = useState('#f43f5e');
@@ -1048,8 +1050,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     };
     if (position) {
       hline(position.entry, '#94a3b8', 'E');
-      hline(position.sl, '#f43f5e', 'SL');
-      hline(position.tp, '#10b981', 'TP');
+     hline(position.sl, slColor, 'SL');
+      hline(position.tp, tpColor, 'TP');
       const up = floatUSD >= 0;
       ctx.font = 'bold 15px monospace';
       ctx.fillStyle = up ? '#10b981' : '#f43f5e';
@@ -1837,6 +1839,28 @@ const onPointerDown = (e) => {
               </div>
 
               <div className="border-t border-slate-800 pt-3 space-y-2">
+                {/* Personalización Pines TP / SL */}
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Pines de Posición</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded border border-slate-800">
+                    <input
+                      type="color"
+                      value={tpColor}
+                      onChange={(e) => setTpColor(e.target.value)}
+                      className="w-7 h-7 rounded border border-slate-700 cursor-pointer bg-transparent"
+                    />
+                    <label className="text-[10px] font-mono text-slate-400">TP (Win)</label>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded border border-slate-800">
+                    <input
+                      type="color"
+                      value={slColor}
+                      onChange={(e) => setSlColor(e.target.value)}
+                      className="w-7 h-7 rounded border border-slate-700 cursor-pointer bg-transparent"
+                    />
+                    <label className="text-[10px] font-mono text-slate-400">SL (Loss)</label>
+                  </div>
+                </div>
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Precio actual</p>
                 <div className="flex items-center gap-2">
                   <label className="text-[11px] font-mono text-slate-400 flex-1">Color</label>
