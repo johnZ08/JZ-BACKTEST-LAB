@@ -462,14 +462,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       localStorage.setItem('jz_sl_color', slColor);
       localStorage.setItem('jz_buy_color', buyBtnColor);
       localStorage.setItem('jz_sell_color', sellBtnColor);
-    } catch (_) {}
-  }, [tpColor, slColor, buyBtnColor, sellBtnColor]);'#10b981'); // Color Take Profit / Ganancia
-  const [slColor, setSlColor] = useState('#f43f5e'); // Color Stop Loss / Pérdida
-  const [buyBtnColor, setBuyBtnColor] = useState('#10b981'); // Color botón Comprar
-  const [sellBtnColor, setSellBtnColor] = useState('#f43f5e'); // Color botón Vender
-  const [priceOpacity, setPriceOpacity] = useState(1);
-  const [bullColor, setBullColor] = useState('#10b981');
-  const [bearColor, setBearColor] = useState('#f43f5e');
+      } catch (_) {}
+    }, [tpColor, slColor, buyBtnColor, sellBtnColor]);
   const [sizeTick, setSizeTick] = useState(0);
   const [axisCsv, setAxisCsv] = useState(false); // eje de tiempo: hora NY (false) u hora tal cual del CSV (true)
   const [selectedId, setSelectedId] = useState(null);
