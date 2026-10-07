@@ -451,6 +451,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [angleLock, setAngleLock] = useState(false);
   const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
+  const [priceOpacity, setPriceOpacity] = useState(0.4);
   const [tpColor, setTpColor] = useState(() => localStorage.getItem('jz_tp_color') || '#10b981');
   const [slColor, setSlColor] = useState(() => localStorage.getItem('jz_sl_color') || '#f43f5e');
   const [buyBtnColor, setBuyBtnColor] = useState(() => localStorage.getItem('jz_buy_color') || '#10b981');
