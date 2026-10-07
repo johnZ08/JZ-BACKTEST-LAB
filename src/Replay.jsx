@@ -773,7 +773,23 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const isAbove40PercentProfit = currentTradesList.some(
     (t) => (Number(t.pnlUSD) || 0) > maxAllowedSingleTradeProfit
   );
- 
+   // Reinicio manual del Challenge: restaura estado, balance inicial y trades de la sesión
+  const resetChallenge = () => {
+    if (typeof setChallengeStatus === 'function') setChallengeStatus('idle');
+    if (typeof setChallengeBalance === 'function' && typeof challengeInitial !== 'undefined') {
+      setChallengeBalance(challengeInitial);
+    }
+    if (typeof setSessionTrades === 'function') {
+      setSessionTrades([]);
+    }
+    if (typeof setPosition === 'function') {
+      setPosition(null);
+    }
+    if (typeof setError === 'function') {
+      setError('');
+    }
+  };
+  
    const applyLevels = () => {
     const c = data[pos].c;
     const newSl = parseFloat(editSl);
@@ -1702,7 +1718,13 @@ const onPointerDown = (e) => {
                 >
                   🎓 Iniciar Challenge Aleatorio
                 </button>
-
+                 <button
+                  onClick={resetChallenge}
+                  className="w-full mt-2 py-1.5 px-3 rounded text-[11px] font-mono font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  🔄 Reiniciar Challenge
+                </button>
+                
              <p className="text-[11px] font-mono text-slate-500 text-center">
                   Estado: <span className="text-slate-400">{challengeStatus === 'idle' ? 'Inactivo' : challengeStatus === 'running' ? 'En curso 🟢' : challengeStatus === 'passed' ? 'Superado 🏆' : 'Quemada ❌'}</span>
                 </p>
