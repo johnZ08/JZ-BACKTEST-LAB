@@ -1150,18 +1150,6 @@ const eventPoint = (e) => {
       y: clientY - r.top
     };
   };
-    // Escala precisa de coordenadas considerando la relación real entre bitmap y píxeles CSS
-    const scaleX = r.width > 0 ? cv.width / r.width : 1;
-    const scaleY = r.height > 0 ? cv.height / r.height : 1;
-    const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
-    
-    // Normalizamos a las coordenadas lógicas esperadas por las funciones de dibujo
-    const dpr = window.devicePixelRatio || 1;
-    const rawX = (clientX - r.left) * scaleX;
-    const rawY = (clientY - r.top) * scaleY;
-    return { x: rawX / dpr, y: rawY / dpr };
-  };
 const onPointerDown = (e) => {
     const v = viewRef.current;
     if (!v) return;
