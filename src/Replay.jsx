@@ -485,19 +485,19 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   drawingsRef.current = drawings;
   const stepRef = useRef();
     // FIX: bloquea el scroll de la página en móvil mientras Replay está montado
-    // FIX: canvas responsive — el bitmap coincide con el tamaño real del contenedor (evita deformación)
+    // HiDPI / Retina Fix: sincroniza el bitmap con el devicePixelRatio real de la pantalla
   useEffect(() => {
     const wrap = chartWrapRef.current;
     const canvas = canvasRef.current;
     const overlay = overlayRef.current;
     if (!wrap || !canvas || !overlay) return undefined;
+
     const update = () => {
       const r = wrap.getBoundingClientRect();
-      const baseDpr = window.devicePixelRatio || 1;
-      const isWide = r.width > 700;
-      const dpr = isWide ? Math.max(baseDpr, 2) : baseDpr;
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3)); // límite óptimo de 3 para no saturar memoria en móviles
       const w = Math.max(1, Math.round(r.width * dpr));
       const h = Math.max(1, Math.round(r.height * dpr));
+
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
@@ -506,6 +506,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
         setSizeTick((t) => t + 1);
       }
     };
+
     update();
     const ro = new ResizeObserver(update);
     ro.observe(wrap);
@@ -825,9 +826,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   useEffect(() => {
     const cv = canvasRef.current;
     if (!cv || visibleCandles.length === 0) return;
-    const ctx = cv.getContext('2d');
+   const ctx = cv.getContext('2d');
     const dpr = cv.width / cv.clientWidth;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // HiDPI Crisp Rendering: desactiva suavizado borroso para líneas vectoriales y mechas
+    ctx.imageSmoothingEnabled = false;
     const W = cv.width / dpr;
     const H = cv.height / dpr;
     const padR = 84;
@@ -1064,9 +1067,10 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     const v = viewRef.current;
     if (!cv || !v) return;
     const ctx = cv.getContext('2d');
-    const dpr = cv.width / cv.clientWidth;
+   const dpr = cv.width / cv.clientWidth;
     if (!isFinite(dpr) || dpr <= 0 || cv.clientWidth === 0) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
     const h = hoverRef.current;
     if (h) {
