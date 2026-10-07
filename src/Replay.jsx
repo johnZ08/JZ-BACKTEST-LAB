@@ -2504,17 +2504,19 @@ const onPointerDown = (e) => {
                         ⚠️ Regla 40% Violada (Trading Bloqueado)
                       </span>
                     )}
-                    <button
+                  <button
                       onClick={() => openPosition('SELL')}
                       disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
-                      className={`${btn} bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
+                      style={{ backgroundColor: sellBtnColor, borderColor: sellBtnColor }}
+                      className={`${btn} text-slate-950 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                     >
                       Vender
                     </button>
                     <button
                       onClick={() => openPosition('BUY')}
                       disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
-                      className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
+                      style={{ backgroundColor: buyBtnColor, borderColor: buyBtnColor }}
+                      className={`${btn} text-slate-950 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                     >
                       Comprar
                     </button>
