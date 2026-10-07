@@ -451,7 +451,19 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [angleLock, setAngleLock] = useState(false);
   const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
-  const [tpColor, setTpColor] = useState('#10b981'); // Color Take Profit / Ganancia
+  const [tpColor, setTpColor] = useState(() => localStorage.getItem('jz_tp_color') || '#10b981');
+  const [slColor, setSlColor] = useState(() => localStorage.getItem('jz_sl_color') || '#f43f5e');
+  const [buyBtnColor, setBuyBtnColor] = useState(() => localStorage.getItem('jz_buy_color') || '#10b981');
+  const [sellBtnColor, setSellBtnColor] = useState(() => localStorage.getItem('jz_sell_color') || '#f43f5e');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jz_tp_color', tpColor);
+      localStorage.setItem('jz_sl_color', slColor);
+      localStorage.setItem('jz_buy_color', buyBtnColor);
+      localStorage.setItem('jz_sell_color', sellBtnColor);
+    } catch (_) {}
+  }, [tpColor, slColor, buyBtnColor, sellBtnColor]);'#10b981'); // Color Take Profit / Ganancia
   const [slColor, setSlColor] = useState('#f43f5e'); // Color Stop Loss / Pérdida
   const [buyBtnColor, setBuyBtnColor] = useState('#10b981'); // Color botón Comprar
   const [sellBtnColor, setSellBtnColor] = useState('#f43f5e'); // Color botón Vender
@@ -1993,24 +2005,7 @@ const onPointerDown = (e) => {
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                 <button
-                    onClick={() => { openPosition('SELL'); setMobileMenuOpen(false); }}
-                    disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
-                   style={{ backgroundColor: sellBtnColor, borderColor: sellBtnColor }}
-className={`${btn} flex-1 text-slate-950 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
-                  >
-                    Vender
-                  </button>
-                  <button
-                    onClick={() => { openPosition('BUY'); setMobileMenuOpen(false); }}
-                    disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
-                   style={{ backgroundColor: buyBtnColor, borderColor: buyBtnColor }}
-className={`${btn} flex-1 text-slate-950 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
-                  >
-                    Comprar
-                  </button>
-                </div>
+               null
               )}
             </div>
 
