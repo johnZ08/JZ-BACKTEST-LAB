@@ -1141,20 +1141,22 @@ const eventPoint = (e) => {
     const rawY = (clientY - r.top) * scaleY;
     return { x: rawX / dpr, y: rawY / dpr };
   };
-   const onPointerDown = (e) => {
+const onPointerDown = (e) => {
     const v = viewRef.current;
     if (!v) return;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch (_) {}
     e.currentTarget.focus();
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
-    // FIX ETAPA 2: arrastrar sobre el eje de precio (derecha) o el de tiempo (abajo) hace zoom
-    const onPriceAxis = !axisLock && x > v.W - v.padR;
-    const onTimeAxis = !axisLock && y > v.H - v.padB;
+
+    // FIX ETAPA 2: arrastrar sobre el eje de precio (derecha) o el de tiempo (abajo) hace zoom si no está bloqueado
+    // Margen táctil ampliado (pad + 10px) para facilitar tocar los ejes en pantallas táctiles
+    const onPriceAxis = !axisLock && x >= (v.W - v.padR - 10);
+    const onTimeAxis = !axisLock && y >= (v.H - v.padB - 10);
+
     if (onPriceAxis || onTimeAxis) {
-      e.currentTarget.setPointerCapture(e.pointerId);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (_) {}
       axisDragRef.current = {
         kind: onPriceAxis ? 'y' : 'x',
         startX: x,
@@ -1164,6 +1166,11 @@ const eventPoint = (e) => {
       };
       return;
     }
+
+    // Para dibujo, crosshair o paneo libre en el gráfico
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
     // FIX PANEO LIBRE: arrastrar dentro del canvas mueve las velas (si el candado está abierto)
     if (tool === 'cursor' && !panLock && (axisLock || (x <= v.W - v.padR && y <= v.H - v.padB))) {
       const list = drawingsRef.current;
