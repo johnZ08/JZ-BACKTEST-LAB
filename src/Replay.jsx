@@ -2307,17 +2307,22 @@ const onPointerDown = (e) => {
                     <span className="hidden md:inline text-[10px] font-mono text-slate-400 mr-1">
                       {nContracts}x - SL {slPts} - TP {tpPts}
                     </span>
+                    {isAbove40PercentProfit && (
+                      <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-950/80 px-2 py-0.5 rounded border border-rose-500/50 flex items-center gap-1 animate-pulse">
+                        ⚠️ Regla 40% Violada (Trading Bloqueado)
+                      </span>
+                    )}
                     <button
                       onClick={() => openPosition('SELL')}
-                      disabled={atEnd || limitHit || challengeStatus === 'blown'}
-                      className={`${btn} bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
+                      disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
+                      className={`${btn} bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                     >
                       Vender
                     </button>
                     <button
                       onClick={() => openPosition('BUY')}
-                      disabled={atEnd || limitHit || challengeStatus === 'blown'}
-                      className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
+                      disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
+                      className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                     >
                       Comprar
                     </button>
