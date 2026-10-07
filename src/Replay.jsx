@@ -1888,26 +1888,99 @@ const onPointerDown = (e) => {
                 </div>
               </div>
 
-              <div className="border-t border-slate-800 pt-3 space-y-2">
-                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Velas</p>
-                <div className="flex items-center gap-2">
-                  <label className="text-[11px] font-mono text-slate-400 flex-1">Alcista (sube)</label>
-                  <input
-                    type="color"
-                    value={bullColor}
-                    onChange={(e) => setBullColor(e.target.value)}
-                    className="w-10 h-8 rounded border border-slate-700 cursor-pointer bg-slate-950"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-[11px] font-mono text-slate-400 flex-1">Bajista (baja)</label>
-                  <input
-                    type="color"
-                    value={bearColor}
-                    onChange={(e) => setBearColor(e.target.value)}
-                    className="w-10 h-8 rounded border border-slate-700 cursor-pointer bg-slate-950"
-                  />
-                </div>
+             {/* MÓDULO UNIFICADO: PERSONALIZACIÓN VISUAL */}
+              <div className="border-t border-slate-800 pt-3">
+                <details className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
+                  <summary className="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-mono font-bold text-slate-300 hover:text-white">
+                    <span className="flex items-center gap-1.5">
+                      🎨 Personalización Visual
+                    </span>
+                    <span className="text-[10px] text-slate-500 group-open:rotate-180 transition-transform duration-200">
+                      ▼
+                    </span>
+                  </summary>
+
+                  <div className="mt-3 pt-2.5 border-t border-slate-800/60 space-y-3">
+                    {/* Sección 1: Velas */}
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-slate-500 font-mono mb-1.5">Velas Japonesas</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800">
+                          <span className="text-[10px] font-mono text-slate-400">Alcista</span>
+                          <input
+                            type="color"
+                            value={bullColor}
+                            onChange={(e) => setBullColor(e.target.value)}
+                            className="w-6 h-6 rounded border border-slate-700 cursor-pointer bg-transparent"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800">
+                          <span className="text-[10px] font-mono text-slate-400">Bajista</span>
+                          <input
+                            type="color"
+                            value={bearColor}
+                            onChange={(e) => setBearColor(e.target.value)}
+                            className="w-6 h-6 rounded border border-slate-700 cursor-pointer bg-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 2: Pines de Posición (TP / SL) */}
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-slate-500 font-mono mb-1.5">Pines de Posición</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800">
+                          <span className="text-[10px] font-mono text-slate-400">Take Profit</span>
+                          <input
+                            type="color"
+                            value={tpColor}
+                            onChange={(e) => setTpColor(e.target.value)}
+                            className="w-6 h-6 rounded border border-slate-700 cursor-pointer bg-transparent"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800">
+                          <span className="text-[10px] font-mono text-slate-400">Stop Loss</span>
+                          <input
+                            type="color"
+                            value={slColor}
+                            onChange={(e) => setSlColor(e.target.value)}
+                            className="w-6 h-6 rounded border border-slate-700 cursor-pointer bg-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 3: Precio Actual */}
+                    <div className="pt-1 border-t border-slate-800/40">
+                      <p className="text-[9px] uppercase tracking-wider text-slate-500 font-mono mb-1.5">Línea de Precio</p>
+                      <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800 mb-2">
+                        <span className="text-[10px] font-mono text-slate-400">Color línea</span>
+                        <input
+                          type="color"
+                          value={priceColor}
+                          onChange={(e) => setPriceColor(e.target.value)}
+                          className="w-6 h-6 rounded border border-slate-700 cursor-pointer bg-transparent"
+                        />
+                      </div>
+                      <div className="bg-slate-900/40 px-2 py-1.5 rounded border border-slate-800/60">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-mono text-slate-400">Opacidad</span>
+                          <span className="text-[10px] font-mono text-slate-500">{Math.round(priceOpacity * 100)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.1"
+                          max="1"
+                          step="0.05"
+                          value={priceOpacity}
+                          onChange={(e) => setPriceOpacity(Number(e.target.value))}
+                          className="w-full accent-emerald-500 h-1 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </details>
               </div>
 
               {position ? (
