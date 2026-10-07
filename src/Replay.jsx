@@ -463,13 +463,40 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [editTp, setEditTp] = useState('');
   const [position, setPosition] = useState(null);
     // 🎓 Challenge Simulator
-  const [challengeStatus, setChallengeStatus] = useState('idle');
-  const [challengeInitial, setChallengeInitial] = useState(25000);
-  const [challengeBalance, setChallengeBalance] = useState(25000);
-  const [challengePhase, setChallengePhase] = useState('eval');
-  const [sessionTrades, setSessionTrades] = useState([]);
+  // Persistencia del Challenge: recuperación de estado previo
+  const savedChallenge = (() => {
+    try {
+      const item = localStorage.getItem('jz_challenge_state');
+      return item ? JSON.parse(item) : null;
+    } catch (_) {
+      return null;
+    }
+  })();
+
+  const [challengeStatus, setChallengeStatus] = useState(savedChallenge?.status || 'idle');
+  const [challengeInitial, setChallengeInitial] = useState(savedChallenge?.initial || 25000);
+  const [challengeBalance, setChallengeBalance] = useState(savedChallenge?.balance ?? 25000);
+  const [challengePhase, setChallengePhase] = useState(savedChallenge?.phase || 'eval');
+  const [sessionTrades, setSessionTrades] = useState(savedChallenge?.trades || []);
   const [error, setError] = useState('');
 
+  // Persistencia del Challenge: autoguardado automático en cada cambio de estado o trade
+  useEffect(() => {
+    try {
+      if (challengeStatus !== 'idle') {
+        localStorage.setItem(
+          'jz_challenge_state',
+          JSON.stringify({
+            status: challengeStatus,
+            initial: challengeInitial,
+            balance: challengeBalance,
+            phase: challengePhase,
+            trades: sessionTrades
+          })
+        );
+      }
+    } catch (_) {}
+  }, [challengeStatus, challengeInitial, challengeBalance, challengePhase, sessionTrades]);
   const canvasRef = useRef(null);
   const overlayRef = useRef(null);
   const chartWrapRef = useRef(null);
@@ -773,8 +800,25 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const isAbove40PercentProfit = currentTradesList.some(
     (t) => (Number(t.pnlUSD) || 0) > maxAllowedSingleTradeProfit
   );
-   // Reinicio manual del Challenge: restaura estado, balance inicial y trades de la sesión
+  // Reinicio manual del Challenge: restaura estado, balance inicial y trades de la sesión
   const resetChallenge = () => {
+    try {
+      localStorage.removeItem('jz_challenge_state');
+    } catch (_) {}
+    if (typeof setChallengeStatus === 'function') setChallengeStatus('idle');
+    if (typeof setChallengeBalance === 'function' && typeof challengeInitial !== 'undefined') {
+      setChallengeBalance(challengeInitial);
+    }
+    if (typeof setSessionTrades === 'function') {
+      setSessionTrades([]);
+    }
+    if (typeof setPosition === 'function') {
+      setPosition(null);
+    }
+    if (typeof setError === 'function') {
+      setError('');
+    }
+  };
     if (typeof setChallengeStatus === 'function') setChallengeStatus('idle');
     if (typeof setChallengeBalance === 'function' && typeof challengeInitial !== 'undefined') {
       setChallengeBalance(challengeInitial);
