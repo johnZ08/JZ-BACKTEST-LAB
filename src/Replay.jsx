@@ -508,6 +508,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const selectedRef = useRef(null);
   const dragRef = useRef(null);
   const axisDragRef = useRef(null); // FIX ETAPA 2: arrastre sobre los ejes para hacer zoom
+  const pinDragRef = useRef(null); // Arrastre interactivo de pines SL/TP
   const freePanRef = useRef(null);
   drawingsRef.current = drawings;
   const stepRef = useRef();
@@ -1239,6 +1240,25 @@ const onPointerDown = (e) => {
     }
 
     // Para dibujo, crosshair o paneo libre en el gráfico
+    // Detección de pines interactivos SL / TP (prioridad sobre dibujo y paneo)
+    if (position) {
+      const slY = viewPriceToY(v, position.sl);
+      const tpY = viewPriceToY(v, position.tp);
+      const touchRadius = isTouchDevice() ? 18 : 10;
+
+      if (Math.abs(y - slY) <= touchRadius) {
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+        pinDragRef.current = 'sl';
+        return;
+      }
+      if (Math.abs(y - tpY) <= touchRadius) {
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+        pinDragRef.current = 'tp';
+        return;
+      }
+    }
+
+    // Para dibujo, crosshair o paneo libre en el gráfico
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch (_) {}
@@ -1309,6 +1329,19 @@ const onPointerDown = (e) => {
     hoverRef.current = { x, y };
     const g = dragRef.current;
 
+      // Arrastre en tiempo real del pin SL o TP
+    if (pinDragRef.current && position) {
+      const newPrice = round2(viewYToPrice(v, y));
+      if (pinDragRef.current === 'sl') {
+        setPosition((prev) => prev ? { ...prev, sl: newPrice } : null);
+        setEditSl(String(newPrice));
+      } else if (pinDragRef.current === 'tp') {
+        setPosition((prev) => prev ? { ...prev, tp: newPrice } : null);
+        setEditTp(String(newPrice));
+      }
+      drawOverlay();
+      return;
+    }
     // FIX PANEO LIBRE: si estás arrastrando el canvas, mueve las velas
     if (freePanRef.current) {
       const a = freePanRef.current;
@@ -1417,6 +1450,7 @@ const onPointerDown = (e) => {
     draftRef.current = null;
     dragRef.current = null;
     freePanRef.current = null; // FIX PANEO LIBRE: fin del paneo
+    pinDragRef.current = null; // Fin de arrastre de pin SL/TP
     if (axisDragRef.current?.raf) cancelAnimationFrame(axisDragRef.current.raf);
     axisDragRef.current = null; // FIX ETAPA 2: fin del arrastre de eje
     if (d && (d.t1 !== d.t2 || d.p1 !== d.p2)) {
@@ -1885,17 +1919,17 @@ const onPointerDown = (e) => {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <button
+                 <button
                     onClick={() => { openPosition('SELL'); setMobileMenuOpen(false); }}
-                    disabled={atEnd || limitHit}
-                    className={`${btn} flex-1 bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40`}
+                    disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
+                    className={`${btn} flex-1 bg-rose-500 text-slate-950 border-rose-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     Vender
                   </button>
                   <button
                     onClick={() => { openPosition('BUY'); setMobileMenuOpen(false); }}
-                    disabled={atEnd || limitHit}
-                    className={`${btn} flex-1 bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40`}
+                    disabled={atEnd || limitHit || challengeStatus === 'blown' || isAbove40PercentProfit}
+                    className={`${btn} flex-1 bg-emerald-500 text-slate-950 border-emerald-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     Comprar
                   </button>
