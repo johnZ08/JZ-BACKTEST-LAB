@@ -1714,7 +1714,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                       : 'Ningún trade debe superar el 40% del objetivo de ganancia ($600 máx por trade).'}
                   </p>
                 </div>
-              </div>
+             
                 <div className="border-t border-slate-800 pt-3 space-y-2">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Precio actual</p>
                 <div className="flex items-center gap-2">
