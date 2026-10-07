@@ -780,8 +780,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     setPosition({ ...position, sl: round2(newSl), tp: round2(newTp) });
     setError('');
   };
- {/* BANNER DE ALERTA - REGLA DE CONSISTENCIA (40%) */}
-  {isAbove40PercentProfit && (
+
     const moveToBreakEven = () => {
     const c = data[pos].c;
     const inProfit = position.type === 'BUY' ? c > position.entry : c < position.entry;
@@ -2281,7 +2280,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 )}
               </div>
               
-              {/* 🎓 HUD flotante del Challenge */}
+             {/* 🎓 HUD flotante del Challenge */}
               {challengeStatus === 'running' && (
                 <div className="absolute bottom-2 left-2 z-10 bg-slate-900/90 backdrop-blur border border-emerald-500/40 rounded-lg px-2.5 py-1.5 shadow-lg text-[10px] font-mono text-slate-300 space-y-0.5 pointer-events-none select-none">
                   <div className="flex items-center gap-1.5">
@@ -2303,6 +2302,12 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                     Objetivo: {challengePhase === 'eval' ? '+6%' : '+4%'}
                     {' '}(${(challengeInitial * (challengePhase === 'eval' ? 0.06 : 0.04)).toFixed(0)})
                   </div>
+                  {isAbove40PercentProfit && (
+                    <div className="mt-1 pt-1 border-t border-amber-500/30 text-amber-400 font-bold text-[9px] flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>Regla 40%: Trade &gt; $600</span>
+                    </div>
+                  )}
                 </div>
               )}
 
