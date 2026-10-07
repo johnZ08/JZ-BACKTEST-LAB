@@ -326,18 +326,25 @@ const anchorsOf = (v, d) => {
   }
   return { a: [x1, y1], b: [x2, y2] };
 };
+const isTouchDevice = () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
 const hitHandle = (v, d, x, y) => {
   const an = anchorsOf(v, d);
-  return Object.keys(an).find((k) => Math.hypot(an[k][0] - x, an[k][1] - y) <= 9) || null;
+  // En móviles damos 24px de radio para agarrar el extremo con el dedo; en PC dejamos 10px para precisión
+  const radius = isTouchDevice() ? 24 : 10;
+  return Object.keys(an).find((k) => Math.hypot(an[k][0] - x, an[k][1] - y) <= radius) || null;
 };
+
 const hitBody = (v, d, x, y) => {
   const { a, b } = anchorsOf(v, d);
+  // Radio de tolerancia ampliado para tocar el trazo de la figura
+  const tolerance = isTouchDevice() ? 18 : 7;
   if (d.type === 'line') {
     const dx = b[0] - a[0];
     const dy = b[1] - a[1];
     const len2 = dx * dx + dy * dy;
     const u = len2 ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len2)) : 0;
-    return Math.hypot(x - (a[0] + u * dx), y - (a[1] + u * dy)) <= 6;
+    return Math.hypot(x - (a[0] + u * dx), y - (a[1] + u * dy)) <= tolerance;
   }
   return (
     x >= Math.min(a[0], b[0]) - 4 && x <= Math.max(a[0], b[0]) + 4 &&
