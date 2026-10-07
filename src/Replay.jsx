@@ -1686,8 +1686,34 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
                 </button>
 
                 <p className="text-[11px] font-mono text-slate-500 text-center">
+                  <p className="text-[11px] font-mono text-slate-500 text-center">
                   Estado: <span className="text-slate-400">{challengeStatus === 'idle' ? 'Inactivo' : challengeStatus === 'running' ? 'En curso 🟢' : challengeStatus === 'passed' ? 'Superado 🏆' : 'Quemada ❌'}</span>
                 </p>
+
+                {/* TARJETA INFORMATIVA - REGLA DE CONSISTENCIA (40%) */}
+                <div className={`mt-2 p-2 rounded border text-[11px] font-mono ${
+                  isAbove40PercentProfit 
+                    ? 'bg-rose-950/40 border-rose-500/50 text-rose-300' 
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                }`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold flex items-center gap-1">
+                      {isAbove40PercentProfit ? '⚠️' : '⚖️'} Regla 40% (Consistencia)
+                    </span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold ${
+                      isAbove40PercentProfit 
+                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40' 
+                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                    }`}>
+                      {isAbove40PercentProfit ? 'Violada' : 'En regla'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] leading-relaxed text-slate-400">
+                    {isAbove40PercentProfit 
+                      ? 'Un trade individual superó el 40% del profit objetivo ($600). Cuenta no apta para retiro/aprobación.' 
+                      : 'Ningún trade debe superar el 40% del objetivo de ganancia ($600 máx por trade).'}
+                  </p>
+                </div>
               </div>
                 <div className="border-t border-slate-800 pt-3 space-y-2">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Precio actual</p>
