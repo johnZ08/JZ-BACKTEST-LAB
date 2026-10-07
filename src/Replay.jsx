@@ -452,6 +452,15 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
   const [priceOpacity, setPriceOpacity] = useState(0.4);
+  const [bullColor, setBullColor] = useState(() => localStorage.getItem('jz_bull_color') || '#22c55e');
+  const [bearColor, setBearColor] = useState(() => localStorage.getItem('jz_bear_color') || '#ef4444');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jz_bull_color', bullColor);
+      localStorage.setItem('jz_bear_color', bearColor);
+    } catch (_) {}
+  }, [bullColor, bearColor]);
   const [tpColor, setTpColor] = useState(() => localStorage.getItem('jz_tp_color') || '#10b981');
   const [slColor, setSlColor] = useState(() => localStorage.getItem('jz_sl_color') || '#f43f5e');
   const [buyBtnColor, setBuyBtnColor] = useState(() => localStorage.getItem('jz_buy_color') || '#10b981');
