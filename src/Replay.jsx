@@ -2121,10 +2121,14 @@ const onPointerDown = (e) => {
                       </span>
                     </li>
                   ))}
-                </ul>
+            </ul>
               </div>
             )}
+          </div>
+        </div>
+      )}
 
+      {/* CARGA DE DATOS (escritorio) */}
       {/* CARGA DE DATOS (escritorio) */}
       <div className="hidden">        
         <label className={`${btn} bg-emerald-500 text-slate-950 border-emerald-400 font-bold`}>
