@@ -2126,7 +2126,6 @@ const onPointerDown = (e) => {
              </div>
             )}
           </div>
-        </div>
       )}
 
 
