@@ -2036,62 +2036,59 @@ const onPointerDown = (e) => {
                   </div>
                 </div>
               ) : null}
-            </div>
+            
+            {/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
+              {stats.n > 0 && (
+                <div className="border-t border-slate-800 pt-3">
+                  <details open className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
+                    <summary className="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-mono font-bold text-slate-300 hover:text-white">
+                      <span className="flex items-center gap-1.5">
+                        📊 Rendimiento & Estadísticas
+                      </span>
+                      <span className="text-[10px] text-slate-500 group-open:rotate-180 transition-transform duration-200">
+                        ▼
+                      </span>
+                    </summary>
 
-{/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
-
-{/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
-
-{/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
-            {stats.n > 0 && (
-              <div className="border-t border-slate-800 pt-3">
-                <details open className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
-                  <summary className="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-mono font-bold text-slate-300 hover:text-white">
-                    <span className="flex items-center gap-1.5">
-                      📊 Rendimiento & Estadísticas
-                    </span>
-                    <span className="text-[10px] text-slate-500 group-open:rotate-180 transition-transform duration-200">
-                      ▼
-                    </span>
-                  </summary>
-
-                  <div className="mt-3 pt-2.5 border-t border-slate-800/60">
-                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Trades</p>
-                        <p className="text-sm font-bold text-white mt-0.5">{stats.n}</p>
-                      </div>
-                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Win Rate</p>
-                        <p className="text-sm font-bold text-white mt-0.5">{stats.winRate.toFixed(1)}%</p>
-                      </div>
-                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500">R total</p>
-                        <p className={`text-sm font-bold mt-0.5 ${stats.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {stats.totalR >= 0 ? '+' : ''}{stats.totalR.toFixed(2)}R
-                        </p>
-                      </div>
-                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500">P&L neto</p>
-                        <p className={`text-sm font-bold mt-0.5 ${stats.total >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {stats.total >= 0 ? '+' : '-'}${Math.abs(stats.total).toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Profit Factor</p>
-                        <p className="text-sm font-bold text-white mt-0.5">
-                          {stats.pf === Infinity ? '∞' : stats.pf.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Max DD</p>
-                        <p className="text-sm font-bold text-rose-400 mt-0.5">-${stats.dd.toFixed(2)}</p>
+                    <div className="mt-3 pt-2.5 border-t border-slate-800/60">
+                      <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                          <p className="text-[9px] uppercase tracking-widest text-slate-500">Trades</p>
+                          <p className="text-sm font-bold text-white mt-0.5">{stats.n}</p>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                          <p className="text-[9px] uppercase tracking-widest text-slate-500">Win Rate</p>
+                          <p className="text-sm font-bold text-white mt-0.5">{stats.winRate.toFixed(1)}%</p>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                          <p className="text-[9px] uppercase tracking-widest text-slate-500">R total</p>
+                          <p className={`text-sm font-bold mt-0.5 ${stats.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {stats.totalR >= 0 ? '+' : ''}{stats.totalR.toFixed(2)}R
+                          </p>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                          <p className="text-[9px] uppercase tracking-widest text-slate-500">P&L neto</p>
+                          <p className={`text-sm font-bold mt-0.5 ${stats.total >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {stats.total >= 0 ? '+' : '-'}${Math.abs(stats.total).toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                          <p className="text-[9px] uppercase tracking-widest text-slate-500">Profit Factor</p>
+                          <p className="text-sm font-bold text-white mt-0.5">
+                            {stats.pf === Infinity ? '∞' : stats.pf.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                          <p className="text-[9px] uppercase tracking-widest text-slate-500">Max DD</p>
+                          <p className="text-sm font-bold text-rose-400 mt-0.5">-${stats.dd.toFixed(2)}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </details>
-              </div>
-            )}
+                  </details>
+                </div>
+              )}
+
+     
 
             {/* TRADES DE SESIÓN */}
             {sessionTrades.length > 0 && (
