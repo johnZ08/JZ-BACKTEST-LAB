@@ -2035,7 +2035,7 @@ const onPointerDown = (e) => {
                     </button>
                   </div>
                 </div>
-              ) : null}
+              )}
 
 {/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
 
