@@ -2122,10 +2122,12 @@ const onPointerDown = (e) => {
                     </li>
                   ))}
         </ul>
-              
-              </div>
+                
+             </div>
             )}
-      </div>
+          </div>
+        </div>
+      )}
 
 
      {/* CARGA DE DATOS (escritorio) */}
