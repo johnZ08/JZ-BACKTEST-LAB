@@ -1302,12 +1302,17 @@ const onPointerDown = (e) => {
       }
     }
     if (tool !== 'cursor') {
-      // crear un dibujo nuevo
+      // crear un dibujo nuevo (aislado en móvil: anula scroll nativo y asegura captura del dedo)
+      if (e.pointerType === 'touch') {
+        try { e.preventDefault(); } catch (_) {}
+      }
       if (x > v.W - v.padR || y > v.H - v.padB) return;
-      e.currentTarget.setPointerCapture(e.pointerId);
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
       const t = viewXToTime(v, x);
       const p = viewYToPrice(v, y);
       draftRef.current = { type: tool, t1: t, p1: p, t2: t, p2: p };
+      drawOverlay();
+      return;
     } else {
       // seleccionar y editar: primero los puntos del dibujo seleccionado, luego el cuerpo (el de arriba gana)
       const list = drawingsRef.current;
@@ -1347,6 +1352,18 @@ const onPointerDown = (e) => {
     if (!v) return;
     const { x, y } = eventPoint(e);
     hoverRef.current = { x, y };
+
+    // AISLAMIENTO TÁCTIL: Si se está creando un dibujo con el dedo, se actualiza sin tocar paneo ni ejes
+    if (draftRef.current) {
+      if (e.pointerType === 'touch') {
+        try { e.preventDefault(); } catch (_) {}
+      }
+      draftRef.current.t2 = viewXToTime(v, x);
+      draftRef.current.p2 = viewYToPrice(v, y);
+      drawOverlay();
+      return;
+    }
+
     const g = dragRef.current;
 
       // Arrastre en tiempo real del pin SL o TP
