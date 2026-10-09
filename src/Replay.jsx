@@ -2040,7 +2040,7 @@ const onPointerDown = (e) => {
               )}
             </div>
 
-          {/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
+{/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
             {stats.n > 0 && (
               <div className="border-t border-slate-800 pt-3">
                 <details open className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
@@ -2090,24 +2090,28 @@ const onPointerDown = (e) => {
                 </details>
               </div>
             )}
+
+            {/* TRADES DE SESIÓN */}
             {sessionTrades.length > 0 && (
               <div className="border-t border-slate-800 pt-3 space-y-2">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">
                   Sin guardar ({sessionTrades.length})
                 </p>
-                <button
-                  onClick={handleSave}
-                  className="block w-full text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer"
-                >
-                  Guardar en registro 🔒
-                </button>
-                          <button
-            onClick={handleClearSession}
-            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
-            title="Vaciar trades de sesión sin guardar"
-          >
-            🗑️ Vaciar
-          </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSave}
+                    className="flex-1 text-center px-3 py-2 rounded-lg bg-emerald-500 text-slate-950 border border-emerald-400 font-bold text-xs font-mono cursor-pointer"
+                  >
+                    Guardar en registro 🔒
+                  </button>
+                  <button
+                    onClick={handleClearSession}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg text-xs font-mono font-semibold transition-colors cursor-pointer"
+                    title="Vaciar trades de sesión sin guardar"
+                  >
+                    🗑️ Vaciar
+                  </button>
+                </div>
                 <ul className="space-y-1 text-[11px] font-mono">
                   {sessionTrades.map((t) => (
                     <li key={t.id} className="flex justify-between text-slate-400">
@@ -2120,9 +2124,6 @@ const onPointerDown = (e) => {
                 </ul>
               </div>
             )}
-          </div>
-        </div>
-      )}
 
       {/* CARGA DE DATOS (escritorio) */}
       <div className="hidden">        
