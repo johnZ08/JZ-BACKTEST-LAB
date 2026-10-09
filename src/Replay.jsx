@@ -1754,42 +1754,55 @@ const onPointerDown = (e) => {
               {error && <p className="text-[11px] font-mono text-rose-400">{error}</p>}
             </div>
 
-                                    <div className="border-t border-slate-800 pt-3 space-y-3">
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Operativa</p>
+                              {/* MÓDULO UNIFICADO: OPERATIVA */}
+              <div className="border-t border-slate-800 pt-3">
+                <details className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
+                  <summary className="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-mono font-bold text-slate-300 hover:text-white">
+                    <span className="flex items-center gap-1.5">
+                      ⚙️ Configuración Operativa
+                    </span>
+                    <span className="text-[10px] text-slate-500 group-open:rotate-180 transition-transform duration-200">
+                      ▼
+                    </span>
+                  </summary>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-mono mb-1">SL (puntos)</label>
-                  <input type="number" min="0" step="any" value={slPts} onChange={(e) => setSlPts(e.target.value)} disabled={!!position} className={fieldClass} />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-mono mb-1">TP (puntos)</label>
-                  <input type="number" min="0" step="any" value={tpPts} onChange={(e) => setTpPts(e.target.value)} disabled={!!position} className={fieldClass} />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Sesión</label>
-                  <select value={session} onChange={(e) => setSession(e.target.value)} disabled={!!position} className={fieldClass}>
-                    <option value="NY">NY</option>
-                    <option value="LONDON">Londres</option>
-                    <option value="ASIA">Asia</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Contratos</label>
-                  <input type="number" min="1" step="1" value={contracts} onChange={(e) => setContracts(e.target.value)} disabled={!!position} className={fieldClass} />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Valor por punto ($)</label>
-                  <input type="number" min="0" step="any" value={pointValue} onChange={(e) => setPointValue(e.target.value)} disabled={!!position} className={fieldClass} />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Comisión / contrato ($, ida y vuelta)</label>
-                  <input type="number" min="0" step="any" value={commission} onChange={(e) => setCommission(e.target.value)} disabled={!!position} className={fieldClass} />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] text-slate-500 font-mono mb-1">Límite pérdida diaria ($, 0 = sin límite)</label>
-                  <input type="number" min="0" step="any" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} className={fieldClass} />
-                </div>
+                  <div className="mt-3 pt-2.5 border-t border-slate-800/60">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-mono mb-1">SL (puntos)</label>
+                        <input type="number" min="0" step="any" value={slPts} onChange={(e) => setSlPts(e.target.value)} disabled={!!position} className={fieldClass} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-mono mb-1">TP (puntos)</label>
+                        <input type="number" min="0" step="any" value={tpPts} onChange={(e) => setTpPts(e.target.value)} disabled={!!position} className={fieldClass} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-mono mb-1">Sesión</label>
+                        <select value={session} onChange={(e) => setSession(e.target.value)} disabled={!!position} className={fieldClass}>
+                          <option value="NY">NY</option>
+                          <option value="LONDON">Londres</option>
+                          <option value="ASIA">Asia</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-mono mb-1">Contratos</label>
+                        <input type="number" min="1" step="1" value={contracts} onChange={(e) => setContracts(e.target.value)} disabled={!!position} className={fieldClass} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] text-slate-500 font-mono mb-1">Valor por punto ($)</label>
+                        <input type="number" min="0" step="any" value={pointValue} onChange={(e) => setPointValue(e.target.value)} disabled={!!position} className={fieldClass} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] text-slate-500 font-mono mb-1">Comisión / contrato ($, ida y vuelta)</label>
+                        <input type="number" min="0" step="any" value={commission} onChange={(e) => setCommission(e.target.value)} disabled={!!position} className={fieldClass} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] text-slate-500 font-mono mb-1">Límite pérdida diaria ($, 0 = sin límite)</label>
+                        <input type="number" min="0" step="any" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} className={fieldClass} />
+                      </div>
+                    </div>
+                  </div>
+                </details>
               </div>
 
               <p className="text-[10px] font-mono text-slate-500">
@@ -2027,44 +2040,56 @@ const onPointerDown = (e) => {
               )}
             </div>
 
+          {/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
             {stats.n > 0 && (
-              <div className="border-t border-slate-800 pt-3 space-y-2">
-                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Estadísticas</p>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Trades</p>
-                    <p className="text-sm font-bold text-white mt-0.5">{stats.n}</p>
+              <div className="border-t border-slate-800 pt-3">
+                <details open className="group bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 transition-all">
+                  <summary className="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-mono font-bold text-slate-300 hover:text-white">
+                    <span className="flex items-center gap-1.5">
+                      📊 Rendimiento & Estadísticas
+                    </span>
+                    <span className="text-[10px] text-slate-500 group-open:rotate-180 transition-transform duration-200">
+                      ▼
+                    </span>
+                  </summary>
+
+                  <div className="mt-3 pt-2.5 border-t border-slate-800/60">
+                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Trades</p>
+                        <p className="text-sm font-bold text-white mt-0.5">{stats.n}</p>
+                      </div>
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Win Rate</p>
+                        <p className="text-sm font-bold text-white mt-0.5">{stats.winRate.toFixed(1)}%</p>
+                      </div>
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-500">R total</p>
+                        <p className={`text-sm font-bold mt-0.5 ${stats.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {stats.totalR >= 0 ? '+' : ''}{stats.totalR.toFixed(2)}R
+                        </p>
+                      </div>
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-500">P&L neto</p>
+                        <p className={`text-sm font-bold mt-0.5 ${stats.total >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {stats.total >= 0 ? '+' : '-'}${Math.abs(stats.total).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Profit Factor</p>
+                        <p className="text-sm font-bold text-white mt-0.5">
+                          {stats.pf === Infinity ? '∞' : stats.pf.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-2">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-500">Max DD</p>
+                        <p className="text-sm font-bold text-rose-400 mt-0.5">-${stats.dd.toFixed(2)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Win Rate</p>
-                    <p className="text-sm font-bold text-white mt-0.5">{stats.winRate.toFixed(1)}%</p>
-                  </div>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500">R total</p>
-                    <p className={`text-sm font-bold mt-0.5 ${stats.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {stats.totalR >= 0 ? '+' : ''}{stats.totalR.toFixed(2)}R
-                    </p>
-                  </div>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500">P&L neto</p>
-                    <p className={`text-sm font-bold mt-0.5 ${stats.total >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {stats.total >= 0 ? '+' : '-'}${Math.abs(stats.total).toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Profit Factor</p>
-                    <p className="text-sm font-bold text-white mt-0.5">
-                      {stats.pf === Infinity ? '∞' : stats.pf.toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500">Max DD</p>
-                    <p className="text-sm font-bold text-rose-400 mt-0.5">-${stats.dd.toFixed(2)}</p>
-                  </div>
-                </div>
+                </details>
               </div>
             )}
-
             {sessionTrades.length > 0 && (
               <div className="border-t border-slate-800 pt-3 space-y-2">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">
