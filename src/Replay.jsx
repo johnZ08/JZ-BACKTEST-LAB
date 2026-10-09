@@ -2026,7 +2026,7 @@ const onPointerDown = (e) => {
                       <input type="number" step="any" value={editTp} onChange={(e) => setEditTp(e.target.value)} className={fieldClass} />
                     </div>
                   </div>
-           <div className="flex gap-2">
+ <div className="flex gap-2">
                     <button onClick={applyLevels} className={`${btn} flex-1 bg-slate-950 text-slate-300 border-slate-800 hover:text-white`}>
                       Aplicar
                     </button>
@@ -2035,7 +2035,10 @@ const onPointerDown = (e) => {
                     </button>
                   </div>
                 </div>
-              )}
+              ) : null}
+            </div>
+
+{/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
 
 {/* MÓDULO UNIFICADO: ESTADÍSTICAS */}
 
