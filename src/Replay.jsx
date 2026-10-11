@@ -499,6 +499,9 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [challengePhase, setChallengePhase] = useState(savedChallenge?.phase || 'eval');
   const [sessionTrades, setSessionTrades] = useState(savedChallenge?.trades || []);
   const [error, setError] = useState('');
+    
+  // 📝 Anotaciones de texto
+  const [textPrompt, setTextPrompt] = useState(null);
 
   // Persistencia del Challenge: autoguardado automático en cada cambio de estado o trade
   useEffect(() => {
@@ -1220,6 +1223,24 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     drawOverlay();
   };
 
+  // 📝 Anotaciones de texto: abrir modal en una posición del gráfico
+  const openTextPrompt = (t, p) => {
+    setTextPrompt({ t, p, value: '' });
+  };
+
+  // 📝 Anotaciones de texto: confirmar y crear la anotación
+  const confirmTextPrompt = () => {
+    if (!textPrompt) return;
+    const value = (textPrompt.value || '').trim();
+    if (!value) {
+      setTextPrompt(null);
+      return;
+    }
+    const nd = { type: 'text', t1: textPrompt.t, p1: textPrompt.p, text: value, id: Date.now() };
+    updateDrawings((prev) => [...prev, nd]);
+    setTextPrompt(null);
+    setTool('cursor');
+  };
 const eventPoint = (e) => {
     const cv = overlayRef.current;
     if (!cv) return { x: 0, y: 0 };
@@ -1715,6 +1736,54 @@ const onPointerDown = (e) => {
   return (
     <div className="fixed inset-0 md:static md:inset-auto md:h-auto overflow-hidden md:overflow-visible flex flex-col md:block md:space-y-4">
      
+      {/* 📝 MODAL DE ANOTACIÓN DE TEXTO */}
+      {textPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white font-mono">📝 Anotación</h3>
+              <button
+                onClick={() => setTextPrompt(null)}
+                className="text-slate-400 hover:text-white text-lg leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <textarea
+              autoFocus
+              rows={3}
+              value={textPrompt.value}
+              onChange={(e) => setTextPrompt({ ...textPrompt, value: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  confirmTextPrompt();
+                }
+                if (e.key === 'Escape') setTextPrompt(null);
+              }}
+              placeholder="Escribe tu anotación..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono resize-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTextPrompt(null)}
+                className="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition text-xs font-mono cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmTextPrompt}
+                className="w-2/3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2 rounded-xl transition text-xs font-mono cursor-pointer"
+              >
+                Guardar anotación
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-500 font-mono text-center">
+              Enter = guardar · Shift+Enter = nueva línea · Esc = cancelar
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* MÓVIL: MENÚ HAMBURGUESA */}
       {mobileMenuOpen && (
