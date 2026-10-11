@@ -563,7 +563,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       ro.disconnect();
       window.removeEventListener('resize', update);
     };
-  }, []);
+   }, [active]);
   useEffect(() => {
     if (!active) return undefined;
     if (typeof window === 'undefined') return undefined;
