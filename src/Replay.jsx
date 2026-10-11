@@ -2474,11 +2474,9 @@ const onPointerDown = (e) => {
             )}
 
             <div ref={chartWrapRef} className="relative flex-1 min-h-0 md:flex-none md:aspect-[9/4]">
-               <canvas ref={canvasRef} width={900} height={400} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
+               <canvas ref={canvasRef} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
               <canvas
                 ref={overlayRef}
-                width={900}
-                height={400}
                 className="absolute inset-0 w-full h-full outline-none"
                 style={{ cursor: tool === 'cursor' ? 'default' : 'crosshair', touchAction: 'none' }}
                 onPointerDown={onPointerDown}
