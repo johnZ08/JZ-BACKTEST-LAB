@@ -914,8 +914,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // HiDPI Crisp Rendering: desactiva suavizado borroso para líneas vectoriales y mechas
     ctx.imageSmoothingEnabled = false;
-    const W = cv.width / dpr;
-    const H = cv.height / dpr;
+    const W = cv.clientWidth;
+    const H = cv.clientHeight;
     const padR = 84;
     const padY = 16;
     const padB = 42;
@@ -1154,7 +1154,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     if (!isFinite(dpr) || dpr <= 0 || cv.clientWidth === 0) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
+    ctx.clearRect(0, 0, cv.clientWidth, cv.clientHeight);
     const h = hoverRef.current;
     if (h) {
       ctx.strokeStyle = 'rgba(148,163,184,0.45)';
