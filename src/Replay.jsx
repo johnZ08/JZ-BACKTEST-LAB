@@ -271,6 +271,31 @@ const drawShape = (ctx, v, d, alpha = 1) => {
     ctx.strokeStyle = '#facc15';
     ctx.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
     ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+    } else if (d.type === 'text') {
+    // 📝 Anotación de texto
+    ctx.font = 'bold 12px monospace';
+    const textW = ctx.measureText(d.text).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    const bx = x1 + 6;
+    const by = y1 - boxH - 4;
+    // Fondo
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.fillRect(bx, by, boxW, boxH);
+    // Borde
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, boxW, boxH);
+    // Punto de anclaje
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(x1, y1, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Texto
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(d.text, bx + 6, by + boxH / 2);
+    ctx.textBaseline = 'alphabetic';
   } else {
     // Fibonacci: niveles 0%, 50% (equilibrio, resaltado) y 100%
     const xa = Math.min(x1, x2);
