@@ -2698,6 +2698,7 @@ const onPointerDown = (e) => {
                             key={s.id}
                             onClick={() => {
                               setSessionMenuOpen(false);
+                              jumpToSession(s.id);
                             }}
                             className="block w-full text-left px-3 py-2 text-[11px] font-mono text-slate-200 hover:bg-slate-800 cursor-pointer"
                           >
