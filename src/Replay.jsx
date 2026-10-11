@@ -490,6 +490,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [panLock, setPanLock] = useState(false);
   const [angleLock, setAngleLock] = useState(false);
+  const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
   const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
   const [priceOpacity, setPriceOpacity] = useState(0.4);
@@ -2672,7 +2673,41 @@ const onPointerDown = (e) => {
                       {s}x
                     </option>
                   ))}
-                </select>
+                               </select>
+                <div className="relative">
+                  <button
+                    onClick={() => setSessionMenuOpen((o) => !o)}
+                    className={`px-2 py-1 rounded text-xs font-mono cursor-pointer ${
+                      sessionMenuOpen
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                    }`}
+                    title="Saltar a sesión"
+                  >
+                    📍
+                  </button>
+                  {sessionMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setSessionMenuOpen(false)}
+                      />
+                      <div className="absolute top-full left-0 mt-1 z-50 bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden min-w-[140px]">
+                        {SESSIONS.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              setSessionMenuOpen(false);
+                            }}
+                            className="block w-full text-left px-3 py-2 text-[11px] font-mono text-slate-200 hover:bg-slate-800 cursor-pointer"
+                          >
+                            <span style={{ color: s.color }}>■</span> {s.label} <span className="text-slate-500 text-[9px]">{s.start}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Ejecución rápida: funciona aunque el panel de órdenes esté oculto */}
