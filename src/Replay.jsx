@@ -333,6 +333,10 @@ const pad2 = (n) => String(n).padStart(2, '0');
 const anchorsOf = (v, d) => {
   const x1 = viewTimeToX(v, d.t1);
   const y1 = viewPriceToY(v, d.p1);
+  // 📝 Texto: solo tiene 1 punto de anclaje
+  if (d.type === 'text') {
+    return { a: [x1, y1] };
+  }
   const x2 = viewTimeToX(v, d.t2);
   const y2 = viewPriceToY(v, d.p2);
   if (d.type === 'rect') {
@@ -361,15 +365,18 @@ const hitHandle = (v, d, x, y) => {
 };
 
 const hitBody = (v, d, x, y) => {
+  // 📝 Texto: detecta clic en un radio de 30px alrededor del anclaje
+  if (d.type === 'text') {
+    const { a } = anchorsOf(v, d);
+    return Math.hypot(x - a[0], y - a[1]) <= 30;
+  }
   const { a, b } = anchorsOf(v, d);
-  // Radio de tolerancia ampliado para tocar el trazo de la figura
-  const tolerance = isTouchDevice() ? 18 : 7;
   if (d.type === 'line') {
     const dx = b[0] - a[0];
     const dy = b[1] - a[1];
     const len2 = dx * dx + dy * dy;
     const u = len2 ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len2)) : 0;
-    return Math.hypot(x - (a[0] + u * dx), y - (a[1] + u * dy)) <= tolerance;
+    return Math.hypot(x - (a[0] + u * dx), y - (a[1] + u * dy)) <= 6;
   }
   return (
     x >= Math.min(a[0], b[0]) - 4 && x <= Math.max(a[0], b[0]) + 4 &&
@@ -389,14 +396,23 @@ const applyHandle = (d, handle, t, p) => {
   else if (handle === 'm_t2') { n.t2 = t; }
   return n;
 };
-const moveShape = (d, v, orig, dx, dy) => ({
-  ...d,
-  t1: viewXToTime(v, orig.a[0] + dx),
-  p1: viewYToPrice(v, orig.a[1] + dy),
-  t2: viewXToTime(v, orig.b[0] + dx),
-  p2: viewYToPrice(v, orig.b[1] + dy)
-});
-
+const moveShape = (d, v, orig, dx, dy) => {
+  // 📝 Texto: solo mueve el punto de anclaje
+  if (d.type === 'text') {
+    return {
+      ...d,
+      t1: viewXToTime(v, orig.a[0] + dx),
+      p1: viewYToPrice(v, orig.a[1] + dy)
+    };
+  }
+  return {
+    ...d,
+    t1: viewXToTime(v, orig.a[0] + dx),
+    p1: viewYToPrice(v, orig.a[1] + dy),
+    t2: viewXToTime(v, orig.b[0] + dx),
+    p2: viewYToPrice(v, orig.b[1] + dy)
+  };
+};
 // ---- Persistencia: el CSV (grande) va a IndexedDB; lo pequeño a localStorage ----
 const STATE_KEY = 'jz_replay_state_v1';
 const idbOpen = () =>
