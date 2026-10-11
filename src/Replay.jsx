@@ -817,6 +817,32 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     stepRef.current(target - pos);
   };
 
+    // 📍 Session Jump: salta a la próxima ocurrencia de la sesión elegida
+  const jumpToSession = (sessionId) => {
+    if (!data.length) return;
+    const ses = SESSIONS.find((s) => s.id === sessionId);
+    if (!ses) return;
+    const currentT = data[pos].t;
+    // Buscar en los próximos 30 días
+    const intervals = sessionIntervals(currentT, currentT + 30 * 86400, tzMode);
+    const found = intervals.find((i) => i.s.id === sessionId && i.from > currentT);
+    if (!found) {
+      setError('No encontré esa sesión en los próximos 30 días.');
+      return;
+    }
+    // Binary search: encontrar la vela más cercana a found.from
+    let lo = 0;
+    let hi = data.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (data[mid].t < found.from) lo = mid + 1;
+      else hi = mid;
+    }
+    setPos(lo);
+    setPan(0);
+    setPlaying(false);
+    setError('');
+  };
   const openPosition = (type) => {
     if (limitHit) {
       setError('Límite de pérdida diaria alcanzado: sin nuevas entradas hoy.');
