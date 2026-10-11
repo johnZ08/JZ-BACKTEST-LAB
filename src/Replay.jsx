@@ -1322,6 +1322,16 @@ const onPointerDown = (e) => {
         return;
       }
     }
+
+      // 📝 Anotaciones de texto: tap directo abre el modal
+    if (tool === 'text') {
+      if (x > v.W - v.padR || y > v.H - v.padB) return;
+      const t = viewXToTime(v, x);
+      const p = viewYToPrice(v, y);
+      openTextPrompt(t, p);
+      return;
+    }
+
     if (tool !== 'cursor') {
       // crear un dibujo nuevo (aislado en móvil: anula scroll nativo y asegura captura del dedo)
       if (e.pointerType === 'touch') {
