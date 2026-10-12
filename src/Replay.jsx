@@ -1387,13 +1387,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       if (toolKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         setTool(toolKey);
-      } else 
-            const sessionKey = { a: 'asia', l: 'london', n: 'ny' }[k.toLowerCase()];
-      if (sessionKey && !e.shiftKey && data.length > 0) {
+        } else if (['a', 'l', 'n'].includes(k.toLowerCase()) && !e.shiftKey && data.length > 0) {
+        const sessionKey = { a: 'asia', l: 'london', n: 'ny' }[k.toLowerCase()];
         e.preventDefault();
         jumpToSession(sessionKey);
-      } else 
-            if (k >= '1' && k <= '9') {
+      } else if (k >= '1' && k <= '9') {
         const idx = parseInt(k, 10) - 1;
         if (allowed[idx]) {
           e.preventDefault();
