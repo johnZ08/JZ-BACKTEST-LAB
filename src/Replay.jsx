@@ -1953,6 +1953,104 @@ const onPointerDown = (e) => {
       cancelled = true;
     };
   }, [showCompare, spData.length]);
+  
+  // 📊 Render del segundo gráfico (S&P 500) — alineado al mismo rango temporal que el NAS
+  useEffect(() => {
+    if (!showCompare) return;
+    const cv = spCanvasRef.current;
+    if (!cv || !spData.length || !visibleCandles.length) return;
+
+    const ctx = cv.getContext('2d');
+    const dpr = cv.width / cv.clientWidth;
+    if (!isFinite(dpr) || dpr <= 0 || cv.clientWidth === 0) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    const W = cv.clientWidth;
+    const H = cv.clientHeight;
+    const padR = 84;
+    const padY = 16;
+    const padB = 42;
+    const plotW = W - padR;
+    const plotH = H - padB;
+    ctx.clearRect(0, 0, W, H);
+
+    // Rango temporal del NAS (mismo que el principal)
+    const tStart = visibleCandles[0].t;
+    const tEnd = visibleCandles[visibleCandles.length - 1].t + tf;
+
+    // Filtrar velas del S&P dentro de ese rango
+    const spVisible = spData.filter((c) => c.t >= tStart && c.t <= tEnd);
+    if (!spVisible.length) {
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px monospace';
+      ctx.fillText('Sin datos del S&P en este rango temporal', 12, H / 2);
+      return;
+    }
+
+    // Escala de precios del S&P
+    let lo = Math.min(...spVisible.map((c) => c.l));
+    let hi = Math.max(...spVisible.map((c) => c.h));
+    const margin = (hi - lo || 1) * 0.06;
+    lo -= margin;
+    hi += margin;
+
+    // Mismo ancho de vela que el NAS
+    const cwNas = plotW / visible;
+    const vSp = { lo, hi, left: 0, cw: cwNas, padY, padB, W, H, padR };
+    const ySp = (p) => viewPriceToY(vSp, p);
+
+    // Cuadrícula
+    ctx.lineWidth = 1;
+    ctx.font = '10px monospace';
+    const rawStep = (hi - lo) / 5;
+    const mag = 10 ** Math.floor(Math.log10(rawStep));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((x) => x >= rawStep);
+    for (let p = Math.ceil(lo / step) * step, n = 0; p <= hi && n < 20; p += step, n++) {
+      ctx.strokeStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.moveTo(0, ySp(p));
+      ctx.lineTo(plotW, ySp(p));
+      ctx.stroke();
+      ctx.fillStyle = '#64748b';
+      ctx.fillText(p.toFixed(step < 1 ? 2 : 1), plotW + 6, ySp(p) + 4);
+    }
+
+    // Velas del S&P (mismo estilo que el NAS, con sus colores)
+    spVisible.forEach((c) => {
+      // Mapear tiempo → x usando la misma fórmula que el NAS
+      const relT = (c.t - tStart) / tf;
+      const x = relT * cwNas + cwNas / 2;
+      if (x < 0 || x > plotW) return;
+      const color = c.c >= c.o ? bullColor : bearColor;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(x, ySp(c.h));
+      ctx.lineTo(x, ySp(c.l));
+      ctx.stroke();
+      ctx.fillRect(x - cwNas * 0.35, ySp(Math.max(c.o, c.c)), cwNas * 0.7, Math.max(1, Math.abs(ySp(c.o) - ySp(c.c))));
+    });
+
+    // Línea del precio actual del S&P
+    const lastSp = spVisible[spVisible.length - 1].c;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, ySp(lastSp));
+    ctx.lineTo(plotW, ySp(lastSp));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#0ea5e9';
+    const boxH = 16;
+    ctx.fillRect(plotW + 2, ySp(lastSp) - boxH / 2, padR - 4, boxH);
+    ctx.fillStyle = '#020617';
+    ctx.font = 'bold 10px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lastSp.toFixed(2), plotW + 6, ySp(lastSp));
+    ctx.textBaseline = 'alphabetic';
+  }, [showCompare, spData, visibleCandles, tf, bullColor, bearColor]);
     const forgetSaved = () => {
     const doForget = async () => {
       try {
