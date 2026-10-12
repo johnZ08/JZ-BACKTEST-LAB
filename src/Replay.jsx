@@ -1366,7 +1366,32 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     select(null);
     drawOverlay();
   };
+  // ⌨️ Atajos de teclado globales (solo cuando Replay está activo)
+  useEffect(() => {
+    if (!active) return undefined;
+    const handler = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (textPrompt || pendingSide === 'waiting' || mobileMenuOpen) return;
 
+      const k = e.key;
+
+      if ((k === 'Delete' || k === 'Backspace') && selectedRef.current) {
+        e.preventDefault();
+        deleteSelected();
+      } else if (k === 'Escape') {
+        draftRef.current = null;
+        select(null);
+        setTool('cursor');
+        drawOverlay();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, textPrompt, pendingSide, mobileMenuOpen]);
+
+  
   // 📝 Anotaciones de texto: abrir modal en una posición del gráfico
   const openTextPrompt = (t, p) => {
     setTextPrompt({ t, p, value: '' });
@@ -2772,7 +2797,6 @@ const onPointerDown = (e) => {
                 onPointerUp={onPointerUp}
                 onPointerLeave={onPointerLeave}
                 tabIndex={0}
-                onKeyDown={onKeyDown}
               />
                             {/* BARRA FLOTANTE DE REPRODUCCIÓN (TradingView style) */}
               <div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-lg px-1.5 py-1 shadow-lg">
