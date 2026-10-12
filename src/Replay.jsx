@@ -1376,7 +1376,17 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
 
       const k = e.key;
 
-      if ((k === 'Delete' || k === 'Backspace') && selectedRef.current) {
+            if (k === ' ' && !atEnd) {
+        e.preventDefault();
+        setPlaying((p) => !p);
+      } else if (k === 'ArrowRight') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          nextCandle();
+        } else {
+          stepRef.current(1);
+        }
+      } else if ((k === 'Delete' || k === 'Backspace') && selectedRef.current) {
         e.preventDefault();
         deleteSelected();
       } else if (k === 'Escape') {
