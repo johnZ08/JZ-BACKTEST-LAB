@@ -1376,6 +1376,15 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
 
       const k = e.key;
 
+            if (k >= '1' && k <= '9') {
+        const idx = parseInt(k, 10) - 1;
+        if (allowed[idx]) {
+          e.preventDefault();
+          setTf(allowed[idx].sec);
+          setPan(0);
+          setYRange(null);
+        }
+      } else 
             if (k === ' ' && !atEnd) {
         e.preventDefault();
         setPlaying((p) => !p);
