@@ -1376,6 +1376,18 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
 
       const k = e.key;
 
+            const toolKey = {
+        c: 'cursor',
+        v: 'line',
+        b: 'rect',
+        f: 'fib',
+        t: 'text',
+        p: 'place-pin'
+      }[k.toLowerCase()];
+      if (toolKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setTool(toolKey);
+      } else 
             const sessionKey = { a: 'asia', l: 'london', n: 'ny' }[k.toLowerCase()];
       if (sessionKey && !e.shiftKey && data.length > 0) {
         e.preventDefault();
