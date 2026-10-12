@@ -1975,11 +1975,14 @@ const onPointerDown = (e) => {
     ctx.clearRect(0, 0, W, H);
 
     // Rango temporal del NAS (mismo que el principal)
+     // Rango temporal del NAS (mismo que el principal)
     const tStart = visibleCandles[0].t;
     const tEnd = visibleCandles[visibleCandles.length - 1].t + tf;
 
     // Filtrar velas del S&P dentro de ese rango
-       // DEBUG temporal: mostrar info en pantalla
+    const spVisible = spData.filter((c) => c.t >= tStart && c.t <= tEnd);
+
+    // DEBUG temporal: mostrar info en pantalla
     ctx.fillStyle = '#38bdf8';
     ctx.font = '11px monospace';
     ctx.fillText(`S&P total: ${spData.length} velas`, 12, 20);
