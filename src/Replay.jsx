@@ -1979,11 +1979,22 @@ const onPointerDown = (e) => {
     const tEnd = visibleCandles[visibleCandles.length - 1].t + tf;
 
     // Filtrar velas del S&P dentro de ese rango
-    const spVisible = spData.filter((c) => c.t >= tStart && c.t <= tEnd);
+       // DEBUG temporal: mostrar info en pantalla
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '11px monospace';
+    ctx.fillText(`S&P total: ${spData.length} velas`, 12, 20);
+    ctx.fillText(`NAS rango: ${new Date(tStart * 1000).toISOString().slice(0, 16)}`, 12, 38);
+    ctx.fillText(`NAS hasta: ${new Date(tEnd * 1000).toISOString().slice(0, 16)}`, 12, 56);
+    if (spData.length > 0) {
+      ctx.fillText(`S&P 1ra: ${new Date(spData[0].t * 1000).toISOString().slice(0, 16)}`, 12, 74);
+      ctx.fillText(`S&P últ: ${new Date(spData[spData.length - 1].t * 1000).toISOString().slice(0, 16)}`, 12, 92);
+    }
+    ctx.fillText(`En rango: ${spVisible.length} velas`, 12, 110);
+
     if (!spVisible.length) {
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px monospace';
-      ctx.fillText('Sin datos del S&P en este rango temporal', 12, H / 2);
+      ctx.fillStyle = '#f43f5e';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('⚠️ Sin solapamiento de fechas', 12, 140);
       return;
     }
 
