@@ -1140,6 +1140,38 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       ctx.setLineDash([]);
       if (label) ctx.fillText(`${label} ${p.toFixed(1)}`, plotW + 6, y(p) - 3);
     };
+        // 📌 Pines temporales mientras se coloca SL/TP
+    if (placingPos) {
+      if (placingPos.sl !== undefined) {
+        const ySL = viewPriceToY(v, placingPos.sl);
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, ySL);
+        ctx.lineTo(plotW, ySL);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`SL ${placingPos.sl.toFixed(2)}`, plotW + 6, ySL - 3);
+      }
+      if (placingPos.tp !== undefined) {
+        const yTP = viewPriceToY(v, placingPos.tp);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, yTP);
+        ctx.lineTo(plotW, yTP);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`TP ${placingPos.tp.toFixed(2)}`, plotW + 6, yTP - 3);
+      }
+    }
+
     if (position) {
       hline(position.entry, '#94a3b8', 'E');
      hline(position.sl, slColor, 'SL');
@@ -1217,7 +1249,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       ctx.fillRect(x - 1, plotH, 2, 8);
       ctx.fillText(`${ses.label} ${ses.start}`, Math.min(x + 3, plotW - 70), H - 4);
     });
-  },  [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange, sizeTick, priceColor, priceOpacity, bullColor, bearColor, active]);
+   }, [visibleCandles, position, floatPts, floatUSD, visible, showSessions, tzMode, tf, drawings, draggingId, axisCsv, yRange, sizeTick, priceColor, priceOpacity, bullColor, bearColor, active, placingPos]);
   // Capa interactiva (cruz, dibujo en curso, edición): se pinta sin re-renderizar React
   const drawOverlay = () => {
     const cv = overlayRef.current;
