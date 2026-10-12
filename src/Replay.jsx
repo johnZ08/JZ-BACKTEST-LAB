@@ -1907,6 +1907,35 @@ const onPointerDown = (e) => {
       }
     }
   }, [sessionTrades, challengeStatus, challengeBalance, challengeInitial, challengePhase]);
+  
+  // 📊 Carga el CSV del S&P 500 cuando se activa la comparación
+  useEffect(() => {
+    if (!showCompare) return undefined;
+    if (spData.length > 0) return undefined; // ya cargado
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setSpLoading(true);
+        setSpError('');
+        const res = await fetch(SP500_CSV_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        if (cancelled) return;
+        const rows = parseCsv(text);
+        if (!rows.length) throw new Error('CSV vacío o inválido');
+        setSpData(rows);
+      } catch (err) {
+        if (!cancelled) setSpError('S&P: ' + err.message);
+      } finally {
+        if (!cancelled) setSpLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showCompare, spData.length]);
     const forgetSaved = () => {
     const doForget = async () => {
       try {
