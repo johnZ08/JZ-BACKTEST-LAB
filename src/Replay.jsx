@@ -8,6 +8,7 @@ const ALIGN_OFFSET_H = 0;
 const CONTRACT_SYMBOL = 'MNQZ6';
 // URL del CSV maestro en Supabase Storage — se auto-carga para todos los visitantes
 const CLOUD_CSV_URL = 'https://uwnjmqnznrkfxtvqujcf.supabase.co/storage/v1/object/public/datasets/nas100-master.csv';
+const SP500_CSV_URL = 'https://uwnjmqnznrkfxtvqujcf.supabase.co/storage/v1/object/public/datasets/sp500-master.csv';
 const DEFAULT_POINT_VALUE = 2;
 const ZOOM_STEPS = [30, 50, 100, 150, 250, 400]; // velas visibles según el zoom
 const SPEEDS = [1, 2, 5, 10, 20]; // velas base por segundo
@@ -494,6 +495,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [placingPos, setPlacingPos] = useState(null); // null | { sl } | { sl, tp }
   const [pendingSide, setPendingSide] = useState(null); // null | 'BUY' | 'SELL'
   const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
+    // 📊 Segundo gráfico S&P 500 (comparación)
+  const [showCompare, setShowCompare] = useState(false);
+  const [spData, setSpData] = useState([]);
+  const [spLoading, setSpLoading] = useState(false);
+  const [spError, setSpError] = useState('');
   const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
   const [priceOpacity, setPriceOpacity] = useState(0.4);
