@@ -2477,8 +2477,8 @@ const onPointerDown = (e) => {
                   ['line', 'Línea'],
                   ['rect', 'Rect'],
                   ['fib', 'Fib'],
-                  ['text', '📝']
-                  ['place-pin', '📌']
+                  ['text', '📝'],
+                  ['place-pin', '📌'],
                 ].map(([id, label]) => (
                 <button
                   key={id}
@@ -2562,8 +2562,8 @@ const onPointerDown = (e) => {
                   ['line', 'Línea'],
                   ['rect', 'Rect'],
                   ['fib', 'Fib'],
-                  ['text', '📝']
-                  ['place-pin', '📌']
+                  ['text', '📝'],
+                  ['place-pin', '📌'],
                 ].map(([id, label]) => (
                   <button
                     key={id}
