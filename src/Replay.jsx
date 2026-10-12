@@ -2473,12 +2473,12 @@ const onPointerDown = (e) => {
                 Borrar todo ({drawings.length})
               </button>
                 {[
-                  ['cursor', 'Cursor'],
+                  
                   ['line', 'Línea'],
                   ['rect', 'Rect'],
                   ['fib', 'Fib'],
                   ['text', '📝'],
-                  ['place-pin', '📌'],
+                  
                 ].map(([id, label]) => (
                 <button
                   key={id}
@@ -2563,7 +2563,7 @@ const onPointerDown = (e) => {
                   ['rect', 'Rect'],
                   ['fib', 'Fib'],
                   ['text', '📝'],
-                  ['place-pin', '📌'],
+                  ['place-pin', '📌']
                 ].map(([id, label]) => (
                   <button
                     key={id}
