@@ -1376,6 +1376,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
 
       const k = e.key;
 
+            const sessionKey = { a: 'asia', l: 'london', n: 'ny' }[k.toLowerCase()];
+      if (sessionKey && !e.shiftKey && data.length > 0) {
+        e.preventDefault();
+        jumpToSession(sessionKey);
+      } else 
             if (k >= '1' && k <= '9') {
         const idx = parseInt(k, 10) - 1;
         if (allowed[idx]) {
