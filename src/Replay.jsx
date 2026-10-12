@@ -2478,6 +2478,7 @@ const onPointerDown = (e) => {
                   ['rect', 'Rect'],
                   ['fib', 'Fib'],
                   ['text', '📝']
+                  ['place-pin', '📌']
                 ].map(([id, label]) => (
                 <button
                   key={id}
@@ -2562,6 +2563,7 @@ const onPointerDown = (e) => {
                   ['rect', 'Rect'],
                   ['fib', 'Fib'],
                   ['text', '📝']
+                  ['place-pin', '📌']
                 ].map(([id, label]) => (
                   <button
                     key={id}
