@@ -2911,6 +2911,17 @@ const onPointerDown = (e) => {
                     </>
                   )}
                 </div>
+                                <button
+                  onClick={() => setShowCompare((s) => !s)}
+                  className={`hidden md:inline-block px-2 py-1 rounded text-xs font-mono cursor-pointer ${
+                    showCompare
+                      ? 'bg-blue-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                  }`}
+                  title={showCompare ? 'Ocultar S&P 500' : 'Comparar con S&P 500'}
+                >
+                  📊
+                </button>
               </div>
 
               {/* Ejecución rápida: funciona aunque el panel de órdenes esté oculto */}
