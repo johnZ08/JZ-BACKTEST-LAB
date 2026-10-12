@@ -1403,6 +1403,21 @@ const onPointerDown = (e) => {
       return;
     }
 
+      // 📌 Colocación de pines SL/TP por clic
+    if (tool === 'place-pin') {
+      if (x > v.W - v.padR || y > v.H - v.padB) return;
+      const tappedPrice = round2(viewYToPrice(v, y));
+      if (!placingPos) {
+        // 1er tap: fija el SL
+        setPlacingPos({ sl: tappedPrice });
+      } else if (!placingPos.tp) {
+        // 2do tap: fija el TP y abre el popup
+        setPlacingPos({ sl: placingPos.sl, tp: tappedPrice });
+        setPendingSide('waiting');
+      }
+      return;
+    }
+
     if (tool !== 'cursor') {
       // crear un dibujo nuevo (aislado en móvil: anula scroll nativo y asegura captura del dedo)
       if (e.pointerType === 'touch') {
