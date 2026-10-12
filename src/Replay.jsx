@@ -592,13 +592,13 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     // HiDPI / Retina Fix: sincroniza el bitmap con el devicePixelRatio real de la pantalla
   useEffect(() => {
     const wrap = chartWrapRef.current;
-    const canvas = canvasRef.current;
+       const canvas = canvasRef.current;
     const overlay = overlayRef.current;
     if (!wrap || !canvas || !overlay) return undefined;
 
     const update = () => {
       const r = wrap.getBoundingClientRect();
-      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3)); // límite óptimo de 3 para no saturar memoria en móviles
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
       const w = Math.max(1, Math.round(r.width * dpr));
       const h = Math.max(1, Math.round(r.height * dpr));
 
@@ -609,17 +609,32 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
         overlay.height = h;
         setSizeTick((t) => t + 1);
       }
+
+      // 📊 Segundo canvas: S&P 500
+      const spWrap = spWrapRef.current;
+      const spCanvas = spCanvasRef.current;
+      if (spWrap && spCanvas) {
+        const spr = spWrap.getBoundingClientRect();
+        const spw = Math.max(1, Math.round(spr.width * dpr));
+        const sph = Math.max(1, Math.round(spr.height * dpr));
+        if (spCanvas.width !== spw || spCanvas.height !== sph) {
+          spCanvas.width = spw;
+          spCanvas.height = sph;
+          setSizeTick((t) => t + 1);
+        }
+      }
     };
 
     update();
     const ro = new ResizeObserver(update);
     ro.observe(wrap);
+    if (spWrapRef.current) ro.observe(spWrapRef.current);
     window.addEventListener('resize', update);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', update);
     };
-   }, [active]);
+  }, [active, showCompare]);
   useEffect(() => {
     if (!active) return undefined;
     if (typeof window === 'undefined') return undefined;
