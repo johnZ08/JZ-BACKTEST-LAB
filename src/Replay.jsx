@@ -490,6 +490,9 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);// panel de órdenes (menú hamburguesa)
   const [panLock, setPanLock] = useState(false);
   const [angleLock, setAngleLock] = useState(false);
+    // 📌 Colocación de pines SL/TP con clic
+  const [placingPos, setPlacingPos] = useState(null); // null | { sl } | { sl, tp }
+  const [pendingSide, setPendingSide] = useState(null); // null | 'BUY' | 'SELL'
   const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
   const [axisLock, setAxisLock] = useState(false);
   const [priceColor, setPriceColor] = useState('#0ea5e9');
@@ -1348,7 +1351,7 @@ const onPointerDown = (e) => {
       return;
     }
 
-    // Para dibujo, crosshair o paneo libre en el gráfico
+   
     // Detección de pines interactivos SL / TP (prioridad sobre dibujo y paneo)
     if (position) {
       const slY = viewPriceToY(v, position.sl);
