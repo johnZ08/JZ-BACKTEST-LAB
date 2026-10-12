@@ -847,6 +847,47 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     setPlaying(false);
     setError('');
   };
+    // 📌 Confirmar la colocación de pines con el lado elegido
+  const confirmPlacingPos = (side) => {
+    if (!placingPos || placingPos.sl === undefined || placingPos.tp === undefined) return;
+    const entry = round2(data[pos].c);
+    // Validar: BUY → SL < Entry < TP | SELL → TP < Entry < SL
+    const ok =
+      side === 'BUY'
+        ? placingPos.sl < entry && entry < placingPos.tp
+        : placingPos.tp < entry && entry < placingPos.sl;
+    if (!ok) {
+      setError(`Los pines no cuadran para ${side}. Revisa las posiciones.`);
+      return;
+    }
+    const risk = Math.abs(entry - placingPos.sl);
+    const reward = Math.abs(placingPos.tp - entry);
+    setPosition({
+      type: side,
+      entry,
+      sl: placingPos.sl,
+      tp: placingPos.tp,
+      openTime: data[pos].t,
+      session,
+      contracts: Math.max(1, Math.floor(Number(contracts)) || 1),
+      pointValue: Number(pointValue) || DEFAULT_POINT_VALUE,
+      commission: Math.max(0, Number(commission) || 0),
+      risk,
+      rr0: risk > 0 ? reward / risk : 0
+    });
+    setPlacingPos(null);
+    setPendingSide(null);
+    setTool('cursor');
+    setError('');
+  };
+
+  // 📌 Cancelar la colocación (limpia todo)
+  const cancelPlacing = () => {
+    setPlacingPos(null);
+    setPendingSide(null);
+    setTool('cursor');
+    setError('');
+  };
   const openPosition = (type) => {
     if (limitHit) {
       setError('Límite de pérdida diaria alcanzado: sin nuevas entradas hoy.');
@@ -1908,6 +1949,51 @@ const onPointerDown = (e) => {
             </div>
             <p className="text-[10px] text-slate-500 font-mono text-center">
               Enter = guardar · Shift+Enter = nueva línea · Esc = cancelar
+            </p>
+          </div>
+        </div>
+      )}
+
+            {/* 📌 MODAL CONFIRMAR LADO (BUY/SELL) */}
+      {pendingSide === 'waiting' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div className="text-center space-y-1">
+              <h3 className="text-base font-bold text-white font-mono">📌 Confirmar Posición</h3>
+              <p className="text-[11px] text-slate-400 font-mono">
+                Precio actual: <span className="text-white">{data[pos]?.c?.toFixed(2)}</span>
+              </p>
+              <p className="text-[10px] text-slate-500 font-mono">
+                SL: <span className="text-rose-400">{placingPos?.sl?.toFixed(2)}</span>
+                {'  '}·{'  '}
+                TP: <span className="text-emerald-400">{placingPos?.tp?.toFixed(2)}</span>
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => confirmPlacingPos('SELL')}
+                className="flex-1 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold py-3 rounded-xl transition text-sm font-mono cursor-pointer"
+              >
+                SELL
+              </button>
+              <button
+                onClick={() => confirmPlacingPos('BUY')}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition text-sm font-mono cursor-pointer"
+              >
+                BUY
+              </button>
+            </div>
+
+            <button
+              onClick={cancelPlacing}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition text-xs font-mono cursor-pointer"
+            >
+              Cancelar
+            </button>
+
+            <p className="text-[10px] text-slate-500 font-mono text-center">
+              BUY: SL &lt; Entry &lt; TP · SELL: TP &lt; Entry &lt; SL
             </p>
           </div>
         </div>
