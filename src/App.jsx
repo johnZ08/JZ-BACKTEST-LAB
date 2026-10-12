@@ -455,7 +455,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto space-y-6">
+            <div className={`mx-auto space-y-6 ${view === 'replay' ? 'max-w-none' : 'max-w-6xl'}`}>
         {/* CABECERA */}
         <header className={`${view === 'replay' ? 'hidden' : 'flex'} flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-5`}>
           <div className={view === 'replay' ? 'hidden' : ''}>
