@@ -573,6 +573,8 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   }, [challengeStatus, challengeInitial, challengeBalance, challengePhase, sessionTrades]);
   const canvasRef = useRef(null);
   const overlayRef = useRef(null);
+  const spCanvasRef = useRef(null);
+  const spWrapRef = useRef(null);
   const chartWrapRef = useRef(null);
   const viewRef = useRef(null);
   const draftRef = useRef(null);
@@ -3108,6 +3110,24 @@ const onPointerDown = (e) => {
               )}
             </div>
           </div>
+          
+          {/* 📊 SEGUNDO GRÁFICO: S&P 500 (comparación) */}
+          {showCompare && (
+            <div ref={spWrapRef} className="relative flex-1 min-h-0 md:flex-none md:aspect-[9/4]">
+              <canvas ref={spCanvasRef} className="absolute inset-0 w-full h-full rounded-lg bg-slate-950" />
+              {spLoading && (
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-400 bg-slate-950/70 rounded-lg">
+                  Cargando S&P 500...
+                </div>
+              )}
+              {spError && (
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-rose-400 bg-slate-950/70 rounded-lg">
+                  {spError}
+                </div>
+              )}
+            </div>
+          )}
+
 
           {/* OPERATIVA (colapsable con el botón ☰) */}
           {panelOpen && (
