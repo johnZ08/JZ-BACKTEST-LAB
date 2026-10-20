@@ -630,14 +630,7 @@ export default function App() {
 
         </div>
 
-            <textarea
-              value={journalText}
-              onChange={(e) => setJournalText(e.target.value)}
-              placeholder="Ej: Hoy respeté el plan. Entré en el FVG de Londres y salí en el BOS. Me costó esperar la confirmación pero el resultado fue positivo..."
-              rows={12}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono resize-y"
-            />
-
+      
             <div className="flex justify-end">
               <button
                 onClick={() => {
