@@ -494,6 +494,11 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     // 📌 Colocación de pines SL/TP con clic
   const [placingPos, setPlacingPos] = useState(null); // null | { sl } | { sl, tp }
   const [pendingSide, setPendingSide] = useState(null); // null | 'BUY' | 'SELL'
+    // 📝 Modal Post-Trade (Confluencias)
+  const [showPostTrade, setShowPostTrade] = useState(false);
+  const [pendingTradeData, setPendingTradeData] = useState(null);
+  const [tradeConfluences, setTradeConfluences] = useState([]);
+  const [tradeNotes, setTradeNotes] = useState('');
   const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
     // 📊 Segundo gráfico S&P 500 (comparación)
   const [showCompare, setShowCompare] = useState(false);
@@ -2221,6 +2226,74 @@ const onPointerDown = (e) => {
           </div>
         </div>
       )}
+
+      
+      {/* 📝 MODAL POST-TRADE (CONFLUENCIAS) */}
+      {showPostTrade && pendingTradeData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div className="text-center space-y-1">
+              <h3 className="text-base font-bold text-white font-mono">🏁 Operación Cerrada</h3>
+              <p className={`text-xl font-bold font-mono ${pendingTradeData.pnlUSD >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {pendingTradeData.pnlUSD >= 0 ? '+' : '-'}${Math.abs(pendingTradeData.pnlUSD).toFixed(2)} 
+                <span className="text-sm ml-2">({pendingTradeData.resultR > 0 ? '+' : ''}{pendingTradeData.resultR}R)</span>
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 font-mono mb-2">Confluencias / Setup:</label>
+              <div className="grid grid-cols-2 gap-2">
+                {['Toma de Liquidez', 'FVG', 'BOS', 'Order Block', 'Divergencia', 'Otro'].map((c) => (
+                  <label key={c} className="flex items-center gap-2 text-[11px] font-mono text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tradeConfluences.includes(c)}
+                      onChange={(e) => {
+                        if (e.target.checked) setTradeConfluences([...tradeConfluences, c]);
+                        else setTradeConfluences(tradeConfluences.filter((x) => x !== c));
+                      }}
+                      className="accent-emerald-500"
+                    />
+                    {c}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 font-mono mb-1">Notas rápidas:</label>
+              <textarea
+                rows={2}
+                value={tradeNotes}
+                onChange={(e) => setTradeNotes(e.target.value)}
+                placeholder="Ej: Entrada limpia tras barrido de mínimos..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono resize-none"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                // Guardar el trade con las confluencias
+                const finalTrade = {
+                  ...pendingTradeData,
+                  confluences: tradeConfluences,
+                  notes: tradeNotes,
+                  challengeId: 'challenge_actual' // Luego lo vinculamos al ID real
+                };
+                setSessionTrades((prev) => [...prev, finalTrade]);
+                setShowPostTrade(false);
+                setPendingTradeData(null);
+                setTradeConfluences([]);
+                setTradeNotes('');
+              }}
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition text-sm font-mono cursor-pointer"
+            >
+              Guardar Trade y Continuar
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {/* MÓVIL: MENÚ HAMBURGUESA */}
       {mobileMenuOpen && (
