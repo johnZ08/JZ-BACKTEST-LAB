@@ -551,6 +551,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
 
   const [challengeStatus, setChallengeStatus] = useState(savedChallenge?.status || 'idle');
   const [challengeId, setChallengeId] = useState(savedChallenge?.id || null);
+  const [challengeHistory, setChallengeHistory] = useState(savedChallenge?.history || []);
   const [challengeInitial, setChallengeInitial] = useState(savedChallenge?.initial || 25000);
   const [challengeBalance, setChallengeBalance] = useState(savedChallenge?.balance ?? 25000);
   const [challengePhase, setChallengePhase] = useState(savedChallenge?.phase || 'eval');
@@ -710,6 +711,26 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
       .then(() => navigator.storage?.persist?.())
       .catch(() => setError('No se pudo guardar el CSV en el navegador (¿poco espacio?).'));
   };
+
+    // 🏁 Guarda el resultado final del challenge en el historial
+  const endChallenge = (finalStatus) => {
+    const record = {
+      id: challengeId || `ch_${Date.now()}`,
+      status: finalStatus, // 'passed' o 'blown'
+      startBalance: challengeInitial,
+      endBalance: challengeBalance,
+      phase: challengePhase,
+      endDate: new Date().toISOString(),
+      tradesCount: sessionTrades.length
+    };
+    
+    // Agregamos el nuevo registro al inicio de la lista
+    setChallengeHistory((prev) => [record, ...prev]);
+    
+    // Cambiamos el estado para que se bloquee el trading
+    setChallengeStatus(finalStatus);
+  };
+
     // 🎓 Challenge: inicia un challenge aleatorio desde una posición al azar
   const startChallenge = () => {
     if (!data.length) {
@@ -1926,7 +1947,7 @@ const onPointerDown = (e) => {
     const target = challengeInitial * (challengePhase === 'eval' ? 0.06 : 0.04);
 
     if (profit >= target) {
-      setChallengeStatus('passed');
+        endChallenge('passed');
     } else {
       // Pérdida diaria EOD: suma de pnlUSD de trades del mismo día
       const day = last.dateISO;
@@ -1934,7 +1955,7 @@ const onPointerDown = (e) => {
         .filter((t) => t.dateISO === day)
         .reduce((acc, t) => acc + (t.pnlUSD || 0), 0);
       if (dayPnL <= -(challengeInitial * 0.04)) {
-        setChallengeStatus('blown');
+        endChallenge('blown');
       }
     }
   }, [sessionTrades, challengeStatus, challengeBalance, challengeInitial, challengePhase]);
@@ -2417,6 +2438,22 @@ const onPointerDown = (e) => {
                       ? 'Un trade individual superó el 40% del profit objetivo ($600). Cuenta no apta para retiro/aprobación.' 
                       : 'Ningún trade debe superar el 40% del objetivo de ganancia ($600 máx por trade).'}
                   </p>
+                                {challengeHistory.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-800">
+                  <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mb-2">Historial de Intentos</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                    {challengeHistory.map((h, i) => (
+                      <div key={h.id} className="flex justify-between items-center text-[10px] font-mono bg-slate-950 p-1.5 rounded border border-slate-800">
+                        <span className="text-slate-400">Intento #{challengeHistory.length - i}</span>
+                        <span className={h.status === 'passed' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                          {h.status === 'passed' ? 'SUPERADO' : 'QUEMADO'}
+                        </span>
+                        <span className="text-slate-500">${h.endBalance.toFixed(0)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
                 </div>
               </div>
 
