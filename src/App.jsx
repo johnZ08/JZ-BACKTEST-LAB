@@ -649,8 +649,7 @@ export default function App() {
                 Guardar Reflexión
               </button>
             </div>
-          </section>
-        </div>
+        
      
         <div className={view === 'registro' ? 'space-y-6' : 'hidden'}>
         {/* PERIODO Y SESIONES */}
