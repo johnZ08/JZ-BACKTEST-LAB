@@ -719,8 +719,101 @@ export default function App() {
             </div>
           )}
         </section>
+          
+          
+        {/* 📅 CALENDARIO HEATMAP */}
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-sm font-bold text-white font-mono mb-1">
+                Calendario de Operativa
+              </h2>
+              <p className="text-xs text-slate-500 font-mono capitalize">
+                {calendarDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+            
+            {/* Paleta de colores */}
+            <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400">
+              <div className="flex items-center gap-1">
+                <span>Positivo</span>
+                <input type="color" value={heatmapPos} onChange={(e) => setHeatmapPos(e.target.value)} className="w-5 h-5 rounded cursor-pointer bg-transparent border-0 p-0" />
+              </div>
+              <div className="flex items-center gap-1">
+                <span>Negativo</span>
+                <input type="color" value={heatmapNeg} onChange={(e) => setHeatmapNeg(e.target.value)} className="w-5 h-5 rounded cursor-pointer bg-transparent border-0 p-0" />
+              </div>
+              <div className="flex items-center gap-2 ml-2">
+                <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))} className="px-2 py-1 bg-slate-950 border border-slate-800 rounded hover:text-white">‹</button>
+                <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))} className="px-2 py-1 bg-slate-950 border border-slate-800 rounded hover:text-white">›</button>
+              </div>
+            </div>
+          </div>
 
-        {/* FORMULARIO + HISTORIAL */}
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-mono mb-2 text-slate-500">
+            <div>DOM</div><div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {/* Días vacíos al inicio del mes */}
+            {Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1).getDay() }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square bg-transparent"></div>
+            ))}
+            
+            {/* Días del mes */}
+            {Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
+              const dayNum = i + 1;
+              const dateStr = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+              const stats = dailyStats[dateStr];
+              const pnl = stats ? stats.pnl : 0;
+              
+              // Colores dinámicos
+              let bgColor = 'bg-slate-950';
+              let textColor = 'text-slate-600';
+              if (stats) {
+                bgColor = pnl > 0 ? '' : pnl < 0 ? '' : 'bg-slate-800';
+                textColor = 'text-slate-200 font-bold';
+              }
+              const isSelected = selectedDay === dateStr;
+
+              return (
+                <button
+                  key={dateStr}
+                  onClick={() => setSelectedDay(isSelected ? null : dateStr)}
+                  style={stats && pnl !== 0 ? { backgroundColor: pnl > 0 ? heatmapPos + '40' : heatmapNeg + '40', borderColor: pnl > 0 ? heatmapPos : heatmapNeg } : {}}
+                  className={`aspect-square rounded border flex flex-col items-center justify-center text-[10px] font-mono transition cursor-pointer hover:opacity-80 ${bgColor} ${textColor} ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900' : ''}`}
+                  title={stats ? `PnL: $${pnl.toFixed(2)}` : 'Sin trades'}
+                >
+                  <span>{dayNum}</span>
+                  {stats && (
+                    <span className={pnl >= 0 ? 'text-emerald-400 text-[8px]' : 'text-rose-400 text-[8px]'}>
+                      {pnl > 0 ? '+' : ''}{pnl.toFixed(0)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Detalle del día seleccionado */}
+          {selectedDay && dailyStats[selectedDay] && (
+            <div className="mt-4 pt-4 border-t border-slate-800">
+              <h3 className="text-[11px] font-bold text-white font-mono mb-2">Detalle del {selectedDay.split('-').reverse().join('/')}:</h3>
+              <div className="space-y-1">
+                {dailyStats[selectedDay].trades.map((t) => (
+                  <div key={t.id} className="flex justify-between text-[10px] font-mono text-slate-400 bg-slate-950 p-2 rounded border border-slate-800">
+                    <span>{t.type} - {t.asset}</span>
+                    <span className={t.pnlUSD >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                      {t.pnlUSD >= 0 ? '+' : ''}${(t.pnlUSD || 0).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+          {/* FORMULARIO + HISTORIAL */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {!isVitrina && (
           <form
