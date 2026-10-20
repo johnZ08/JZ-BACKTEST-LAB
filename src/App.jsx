@@ -50,6 +50,9 @@ export default function App() {
 
   // Fecha del trade (la del backtest, no la de hoy): clave para estilo "replay"
   const [tradeDate, setTradeDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+    // 📖 Journal (Bitácora)
+  const [journalDate, setJournalDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+  const [journalText, setJournalText] = useState('');
   // Sincronización: al iniciar sesión, baja datos de Supabase y mergea con locales
   useEffect(() => {
     if (!cloudEnabled) return undefined;
@@ -533,6 +536,49 @@ export default function App() {
            <Replay onSave={handleSaveReplayTrades} savedTrades={trades} active={view === 'replay'} onGoToRegistro={() => setView('registro')} onRequestAuth={requestAuthorization} />
         </div>
 
+                 {/* 📖 VISTA JOURNAL */}
+        <div className={view === 'journal' ? 'space-y-6' : 'hidden'}>
+          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-white font-mono">📖 Bitácora de Sesión</h2>
+                <p className="text-xs text-slate-400 font-mono mt-1">
+                  Reflexiona sobre tu operativa: errores, aciertos y estado mental.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-mono text-slate-400">Fecha:</label>
+                <input
+                  type="date"
+                  value={journalDate}
+                  onChange={(e) => setJournalDate(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                />
+              </div>
+            </div>
+
+            <textarea
+              value={journalText}
+              onChange={(e) => setJournalText(e.target.value)}
+              placeholder="Ej: Hoy respeté el plan. Entré en el FVG de Londres y salí en el BOS. Me costó esperar la confirmación pero el resultado fue positivo..."
+              rows={12}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono resize-y"
+            />
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  // Lógica de guardado para el siguiente paso
+                  alert('Guardado (próximamente)');
+                }}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 px-6 rounded-xl transition text-sm font-mono cursor-pointer"
+              >
+                Guardar Reflexión
+              </button>
+            </div>
+          </section>
+        </div>
+     
         <div className={view === 'registro' ? 'space-y-6' : 'hidden'}>
         {/* PERIODO Y SESIONES */}
         <section className="flex flex-col lg:flex-row gap-4">
