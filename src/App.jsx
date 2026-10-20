@@ -51,8 +51,20 @@ export default function App() {
   // Fecha del trade (la del backtest, no la de hoy): clave para estilo "replay"
   const [tradeDate, setTradeDate] = useState(() => new Date().toLocaleDateString('en-CA'));
     // 📖 Journal (Bitácora)
+    // 📖 Journal: Diccionario de notas por fecha (YYYY-MM-DD)
+  const [journalEntries, setJournalEntries] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jz_journal_entries');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [journalDate, setJournalDate] = useState(() => new Date().toLocaleDateString('en-CA'));
-  const [journalText, setJournalText] = useState('');
+  const [journalMonthDate, setJournalMonthDate] = useState(new Date());
+
+  // Guardar automáticamente en el navegador al escribir
+  useEffect(() => {
+    localStorage.setItem('jz_journal_entries', JSON.stringify(journalEntries));
+  }, [journalEntries]);
   // Sincronización: al iniciar sesión, baja datos de Supabase y mergea con locales
   useEffect(() => {
     if (!cloudEnabled) return undefined;
@@ -537,26 +549,86 @@ export default function App() {
            <Replay onSave={handleSaveReplayTrades} savedTrades={trades} active={view === 'replay'} onGoToRegistro={() => setView('registro')} onRequestAuth={requestAuthorization} />
         </div>
 
-                 {/* 📖 VISTA JOURNAL */}
-        <div className={view === 'journal' ? 'space-y-6' : 'hidden'}>
-          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-white font-mono">📖 Bitácora de Sesión</h2>
-                <p className="text-xs text-slate-400 font-mono mt-1">
-                  Reflexiona sobre tu operativa: errores, aciertos y estado mental.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-mono text-slate-400">Fecha:</label>
-                <input
-                  type="date"
-                  value={journalDate}
-                  onChange={(e) => setJournalDate(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
-                />
+                         {/* 📖 VISTA JOURNAL */}
+        <div className={view === 'journal' ? 'flex flex-col lg:flex-row gap-6' : 'hidden'}>
+          
+          {/* Calendario del Journal */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 lg:w-1/3 h-fit">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-white font-mono capitalize">
+                {journalMonthDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+              </h2>
+              <div className="flex gap-1">
+                <button onClick={() => setJournalMonthDate(new Date(journalMonthDate.getFullYear(), journalMonthDate.getMonth() - 1, 1))} className="px-2 py-1 bg-slate-950 border border-slate-800 rounded text-slate-400 hover:text-white">‹</button>
+                <button onClick={() => setJournalMonthDate(new Date(journalMonthDate.getFullYear(), journalMonthDate.getMonth() + 1, 1))} className="px-2 py-1 bg-slate-950 border border-slate-800 rounded text-slate-400 hover:text-white">›</button>
               </div>
             </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-mono mb-2 text-slate-500">
+              <div>D</div><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: new Date(journalMonthDate.getFullYear(), journalMonthDate.getMonth(), 1).getDay() }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square"></div>
+              ))}
+              
+              {Array.from({ length: new Date(journalMonthDate.getFullYear(), journalMonthDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
+                const dayNum = i + 1;
+                const dateStr = `${journalMonthDate.getFullYear()}-${String(journalMonthDate.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                const hasEntry = journalEntries[dateStr] && journalEntries[dateStr].trim().length > 0;
+                const isSelected = journalDate === dateStr;
+
+                return (
+                  <button
+                    key={dateStr}
+                    onClick={() => setJournalDate(dateStr)}
+                    className={`aspect-square rounded border flex flex-col items-center justify-center text-[11px] font-mono transition cursor-pointer ${
+                      isSelected ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold' :
+                      hasEntry ? 'bg-slate-800 text-white border-slate-600' : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-600'
+                    }`}
+                  >
+                    {dayNum}
+                    {hasEntry && !isSelected && <span className="w-1 h-1 bg-emerald-400 rounded-full mt-0.5"></span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Editor del Journal */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 lg:w-2/3">
+            <div>
+              <h2 className="text-lg font-bold text-white font-mono">📖 Bitácora del Día</h2>
+              <p className="text-xs text-slate-400 font-mono mt-1 capitalize">
+                {new Date(journalDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+            </div>
+
+            <textarea
+              value={journalEntries[journalDate] || ''}
+              onChange={(e) => setJournalEntries({ ...journalEntries, [journalDate]: e.target.value })}
+              placeholder="¿Cómo fue tu día? Errores, aciertos, estado mental..."
+              rows={12}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono resize-y"
+            />
+
+            <div className="flex justify-end items-center gap-3">
+              <span className="text-xs text-emerald-500 font-mono opacity-70">Guardado automático ✓</span>
+              <button
+                onClick={() => {
+                  const nextDay = new Date(journalDate + 'T12:00:00');
+                  nextDay.setDate(nextDay.getDate() + 1);
+                  setJournalDate(nextDay.toLocaleDateString('en-CA'));
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-6 rounded-xl transition text-sm font-mono cursor-pointer border border-slate-700"
+              >
+                Pasar al Día Siguiente →
+              </button>
+            </div>
+          </div>
+
+        </div>
 
             <textarea
               value={journalText}
