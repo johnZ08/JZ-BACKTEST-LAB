@@ -488,7 +488,8 @@ export default function App() {
             <div className="flex gap-1.5">
               {[
                 { id: 'registro', label: 'Registro' },
-                { id: 'replay', label: 'Replay' }
+                { id: 'replay', label: 'Replay' },
+                { id: 'journal', label: '📖 Journal' }
               ].map((tab) => (
                 <button
                   key={tab.id}
