@@ -749,35 +749,42 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     setLoading(false);
   };
 
-  const closePosition = (outcome, r, exitIdx) => {
+   const closePosition = (outcome, r, exitIdx) => {
     const p = position;
-    const risk = p.risk; // riesgo inicial en puntos (no cambia aunque muevas el SL)
+    const risk = p.risk;
     const rr = round2(p.rr0);
     const day = new Date(p.openTime * 1000).toISOString().slice(0, 10);
     const [y, m, d] = day.split('-');
-    setSessionTrades((prev) => [
-      ...prev,
-      {
-        id: Date.now() + prev.length,
-        dateISO: day,
-        date: `${d}/${m}/${y}`,
-        monthKey: `${y}-${m}`,
-        asset: CONTRACT_SYMBOL,
-        type: p.type,
-        outcome,
-        entry: p.entry,
-        sl: p.sl,
-        tp: p.tp,
-        rr,
-        resultR: round2(r),
-        contracts: p.contracts,
-        pointValue: p.pointValue,
-        commissionUSD: round2(p.commission * p.contracts),
-        pnlUSD: round2(r * risk * p.pointValue * p.contracts - p.commission * p.contracts),
-        session: p.session,
-        notes: `Replay ${tfLabel} - cierre ${fmtTime(data[exitIdx].t)}`
-      }
-    ]);
+
+    // Creamos el trade pero NO lo guardamos en sessionTrades todavía
+    const newTrade = {
+      id: Date.now() + sessionTrades.length,
+      dateISO: day,
+      date: `${d}/${m}/${y}`,
+      monthKey: `${y}-${m}`,
+      asset: CONTRACT_SYMBOL,
+      type: p.type,
+      outcome,
+      entry: p.entry,
+      sl: p.sl,
+      tp: p.tp,
+      rr,
+      resultR: round2(r),
+      contracts: p.contracts,
+      pointValue: p.pointValue,
+      commissionUSD: round2(p.commission * p.contracts),
+      pnlUSD: round2(r * risk * p.pointValue * p.contracts - p.commission * p.contracts),
+      session: p.session,
+      notes: `Replay ${tfLabel} - cierre ${fmtTime(data[exitIdx].t)}`
+    };
+
+    // Abrimos el modal post-trade
+    setPendingTradeData(newTrade);
+    setShowPostTrade(true);
+    setTradeConfluences([]);
+    setTradeNotes('');
+    
+    // Cerramos la posición en el gráfico inmediatamente
     setPosition(null);
   };
 
