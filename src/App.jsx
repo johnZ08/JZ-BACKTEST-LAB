@@ -25,6 +25,11 @@ export default function App() {
   const [selectedSession, setSelectedSession] = useState('ALL');
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [isAllTime, setIsAllTime] = useState(false);
+    // 📅 Estados para el Calendario Heatmap
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [heatmapPos, setHeatmapPos] = useState('#10b981'); // Verde
+  const [heatmapNeg, setHeatmapNeg] = useState('#f43f5e'); // Rojo
 
   const [type, setType] = useState('BUY');
   const [outcome, setOutcome] = useState('WIN');
@@ -284,6 +289,15 @@ export default function App() {
     const matchesSession = selectedSession === 'ALL' ? true : t.session === selectedSession;
     return matchesMonth && matchesSession;
   }).sort((a, b) => (a.dateISO || '').localeCompare(b.dateISO || '') || a.id - b.id);
+
+    // 📅 Calcular PnL diario para el Heatmap
+  const dailyStats = {};
+  filteredTrades.forEach((t) => {
+    const d = t.dateISO || 'unknown';
+    if (!dailyStats[d]) dailyStats[d] = { pnl: 0, trades: [] };
+    dailyStats[d].pnl += (t.pnlUSD || 0);
+    dailyStats[d].trades.push(t);
+  });
 
   const totalTrades = filteredTrades.length;
   const wins = filteredTrades.filter(t => t.outcome === 'WIN').length;
