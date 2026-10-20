@@ -550,6 +550,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
   })();
 
   const [challengeStatus, setChallengeStatus] = useState(savedChallenge?.status || 'idle');
+  const [challengeId, setChallengeId] = useState(savedChallenge?.id || null);
   const [challengeInitial, setChallengeInitial] = useState(savedChallenge?.initial || 25000);
   const [challengeBalance, setChallengeBalance] = useState(savedChallenge?.balance ?? 25000);
   const [challengePhase, setChallengePhase] = useState(savedChallenge?.phase || 'eval');
@@ -731,6 +732,7 @@ export default function Replay({ onSave, savedTrades = [], active = true, onGoTo
     setPan(0);
     setYRange(null);
     setChallengeBalance(challengeInitial);
+    setChallengeId(`ch_${Date.now()}`); // 👈 Genera un ID único
     setChallengeStatus('running');
     setError('');
   };
@@ -2285,7 +2287,7 @@ const onPointerDown = (e) => {
                   ...pendingTradeData,
                   confluences: tradeConfluences,
                   notes: tradeNotes,
-                  challengeId: 'challenge_actual' // Luego lo vinculamos al ID real
+                  challengeId: challengeId || 'ch_default',
                 };
                 setSessionTrades((prev) => [...prev, finalTrade]);
                 setShowPostTrade(false);
